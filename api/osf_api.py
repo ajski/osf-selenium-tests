@@ -1050,3 +1050,23 @@ def get_project_node_analytics_data(session, node_id=None, timespan='week'):
     url = '_/metrics/query/node_analytics/{}/{}/'.format(node_id, timespan)
     data = session.get(url)['data']
     return data or None
+
+
+def get_fake_file_guid(session, file_id):
+
+    url = '/v2/files' + file_id
+    data = session.get(url=url)
+    file_guid = data['data']['attributes']['guid']
+    return file_guid
+
+
+def get_existing_file_data(session, node_id=settings.PREFERRED_NODE):
+    """Return the id of the first file in OSFStorage on a given node.
+    Uploads a new file if one does not exist.
+    """
+    node = client.Node(session=session, id=node_id)
+    node.get()
+    files_url = node.relationships.files['links']['related']['href']
+    data = session.get(files_url + 'osfstorage/')
+    name = data['data'][0]['attributes']['name']
+    return name, data

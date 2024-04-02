@@ -1,3 +1,6 @@
+import datetime
+import os
+
 from selenium import webdriver
 
 import settings
@@ -127,3 +130,54 @@ def close_current_tab(driver, main_window):
     driver.close()
     # switch to parent window
     driver.switch_to.window(main_window)
+
+
+def find_row_by_name(files_page, file_name):
+    all_files = files_page.file_rows
+    for file_row in all_files:
+        if file_name in file_row.text:
+            return file_row
+    return
+
+
+def verify_file_download(driver, file_name):
+    """Helper function to verify the file download functionality on the Project Files
+    page.
+    """
+
+    current_date = datetime.datetime.now()
+    if settings.DRIVER == 'Remote':
+        # First verify the downloaded file exists on the virtual remote machine
+        assert driver.execute_script(
+            'browserstack_executor: {"action": "fileExists", "arguments": {"fileName": "%s"}}'
+            % (file_name)
+        )
+        # Next get the file properties and then verify that the file creation date is today
+        file_props = driver.execute_script(
+            'browserstack_executor: {"action": "getFileProperties", "arguments": {"fileName": "%s"}}'
+            % (file_name)
+        )
+        file_create_date = datetime.datetime.fromtimestamp(file_props['created_time'])
+        assert file_create_date.date() == current_date.date()
+    else:
+        # First verify the downloaded file exists
+        file_path = os.path.expanduser('~/Downloads/' + file_name)
+        assert os.path.exists(file_path)
+        # Next verify the file was downloaded today
+        file_mtime = os.path.getmtime(file_path)
+        file_mod_date = datetime.datetime.fromtimestamp(file_mtime)
+        assert file_mod_date.date() == current_date.date()
+
+
+def latest_download_file():
+    path = os.path.expanduser('~/Downloads/')
+    os.chdir(path)
+    files = sorted(os.listdir(os.getcwd()), key=os.path.getmtime)
+    newest = files[-1]
+    return newest
+
+
+def get_guid_from_url(url, itemno):
+    url_string_list = url.split('/')
+    guid = url_string_list[itemno]
+    return guid
