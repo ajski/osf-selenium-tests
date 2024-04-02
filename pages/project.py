@@ -490,3 +490,47 @@ class RegistrationsPage(GuidBasePage):
     delete_draft_registration_modal = ComponentLocator(
         ConfirmDeleteDraftRegistrationModal
     )
+
+
+class FilesMetadataPage(GuidBasePage):
+
+    base_url = settings.OSF_HOME + '/{guid}'
+
+    identity = Locator(By.CSS_SELECTOR, '[data-test-filename]', settings.LONG_TIMEOUT)
+    metadata_identity = Locator(By.CSS_SELECTOR, '[data-test-metadata-tab]')
+    heading = Locator(By.CSS_SELECTOR, '[h2._metadata-heading_oqi4qj]')
+    files_metadata_edit_button = Locator(
+        By.CSS_SELECTOR, '[data-test-edit-metadata-button]'
+    )
+    files_metadata_download_button = Locator(
+        By.CSS_SELECTOR, '[svg.svg-inline--fa.fa-download]'
+    )
+    files_metadata_title = Locator(By.CSS_SELECTOR, '[data-test-file-title]')
+    files_metadata_description = Locator(
+        By.CSS_SELECTOR, '[data-test-file-description]'
+    )
+    files_metadata_resource_type = Locator(
+        By.CSS_SELECTOR, '[data-test-file-resource-type]'
+    )
+    files_metadata_resource_language = Locator(
+        By.CSS_SELECTOR, '[data-test-file-language]'
+    )
+
+    files_metadata_edit_identity = Locator(
+        By.CSS_SELECTOR, '[div._metadata-pane_gdsp72]'
+    )
+    edit_title = Locator(By.CSS_SELECTOR, '[data-test-title-field]')
+    title_input = Locator(By.CSS_SELECTOR, '[data-test-title-field] textarea')
+    edit_description = Locator(By.CSS_SELECTOR, '[data-test-description-field]')
+    description_input = Locator(
+        By.CSS_SELECTOR,
+        '[textarea#ember148__title.ember-text-area.ember-view.form-control]',
+    )
+    resource_type = Locator(By.CSS_SELECTOR, '[data-test-select-resource-type]')
+    resource_type_option = Locator(By.XPATH, '//li/span[text()="Book"]')
+    resource_language = Locator(By.CSS_SELECTOR, '[data-test-select-resource-language]')
+    resource_language_option = Locator(By.XPATH, '//li/span[text()="English"]')
+    cancel_editing_button = Locator(
+        By.CSS_SELECTOR, '[data-test-cancel-editing-metadata-button]'
+    )
+    save_metadata_button = Locator(By.CSS_SELECTOR, '[data-test-save-metadata-button]')
