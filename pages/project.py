@@ -527,10 +527,95 @@ class FilesMetadataPage(GuidBasePage):
         '[textarea#ember148__title.ember-text-area.ember-view.form-control]',
     )
     resource_type = Locator(By.CSS_SELECTOR, '[data-test-select-resource-type]')
-    resource_type_option = Locator(By.XPATH, '//li/span[text()="Book"]')
+
     resource_language = Locator(By.CSS_SELECTOR, '[data-test-select-resource-language]')
-    resource_language_option = Locator(By.XPATH, '//li/span[text()="English"]')
+    dropdown_options = GroupLocator(
+        By.CSS_SELECTOR,
+        '#ember-basic-dropdown-wormhole > div > ul > li>span',
+    )
+
+    def select_from_dropdown_listbox(self, selection):
+        for option in self.dropdown_options:
+            if option.text == selection:
+                option.click()
+                break
+
     cancel_editing_button = Locator(
         By.CSS_SELECTOR, '[data-test-cancel-editing-metadata-button]'
     )
     save_metadata_button = Locator(By.CSS_SELECTOR, '[data-test-save-metadata-button]')
+
+
+class ProjectMetadataPage(GuidBasePage):
+    base_url = settings.OSF_HOME + '/{guid}/metadata/osf'
+
+    identity = Locator(
+        By.CSS_SELECTOR, '[data-test-metadata-header]', settings.LONG_TIMEOUT
+    )
+    description = Locator(By.CSS_SELECTOR, '[data-test-display-node-description]')
+    save_description_button = Locator(
+        By.CSS_SELECTOR, '[data-test-save-node-description-button]'
+    )
+    cancel_description_button = Locator(
+        By.CSS_SELECTOR, '[data-test-cancel-editing-node-description-button]'
+    )
+    contributors_list = Locator(By.CSS_SELECTOR, '[data-test-contributor-name]')
+    edit_contributors_button = Locator(By.CSS_SELECTOR, '[data-test-edit-contributors]')
+    add_contributor_button = Locator(
+        By.CSS_SELECTOR, 'a.btn.btn-success.btn-sm.m-l-md[href="#addContributors"]'
+    )
+    contributor_search_button = Locator(By.XPATH, '//input[@class="btn btn-default"]')
+    add_displayed_contributor_button = Locator(
+        By.CSS_SELECTOR, '[a.btn.btn-success.contrib-button.btn-mini]'
+    )
+    search_input = Locator(By.XPATH, '//input[@class="form-control"]')
+    resource_type = Locator(
+        By.CSS_SELECTOR, '[data-test-display-resource-type-general]'
+    )
+    resource_language = Locator(
+        By.CSS_SELECTOR, '[data-test-display-resource-language]'
+    )
+    resource_type_dropdown = Locator(
+        By.CSS_SELECTOR, '[data-test-select-resource-type]'
+    )
+    resource_language_dropdown = Locator(
+        By.CSS_SELECTOR, '[data-test-select-resource-language]'
+    )
+
+    dropdown_options = GroupLocator(
+        By.CSS_SELECTOR,
+        '#ember-basic-dropdown-wormhole > div > ul > li>span',
+    )
+
+    def select_from_dropdown_listbox(self, selection):
+        for option in self.dropdown_options:
+            if option.text == selection:
+                option.click()
+                break
+
+    resource_information_save_button = Locator(
+        By.CSS_SELECTOR, '[data-test-save-resource-metadata-button]'
+    )
+
+    funder_name = Locator(By.XPATH, '//span[@class="ember-power-select-status-icon"]')
+    funder_name_serach_input = Locator(
+        By.XPATH, '//input[@class="ember-power-select-search-input"]'
+    )
+    award_title = Locator(By.XPATH, '//input[@name="award_title"]')
+    award_info_URI = Locator(By.XPATH, '//input[@name="award_uri"]')
+    award_number = Locator(By.XPATH, '//input[@name="award_number"]')
+    add_funder_button = Locator(By.XPATH, '//button[text()="Add funder"]')
+    delete_funder_button = Locator(By.XPATH, '//button[text()="Delete funder"][2]')
+    save_funder_info_button = Locator(
+        By.CSS_SELECTOR, '[data-test-save-funding-metadata-button]'
+    )
+    display_funder_name = Locator(By.CSS_SELECTOR, '[data-test-display-funder-name]')
+    display_award_title = Locator(
+        By.CSS_SELECTOR, '[data-test-display-funder-award-title]'
+    )
+    display_award_number = Locator(
+        By.CSS_SELECTOR, '[data-test-display-funder-award-number]'
+    )
+    dispaly_award_info_uri = Locator(
+        By.CSS_SELECTOR, '[data-test-display-funder-award-uri]'
+    )
