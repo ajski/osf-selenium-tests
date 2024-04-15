@@ -103,6 +103,71 @@ class RegistrationMetadataPage(BaseSubmittedRegistrationPage):
     url_addition = 'metadata'
     identity = Locator(By.CSS_SELECTOR, '[data-test-display-resource-type-general]')
 
+    metadata_description = Locator(
+        By.CSS_SELECTOR, '[data-test-display-node-description]'
+    )
+    edit_metadata_description_button = Locator(
+        By.CSS_SELECTOR, '[data-test-edit-node-description-button]'
+    )
+    save_metadata_description_button = Locator(
+        By.CSS_SELECTOR, '[data-test-save-node-description-button]'
+    )
+    contributors_list = Locator(By.CSS_SELECTOR, '[data-test-contributors-list]')
+    contributor_search_button = Locator(By.XPATH, '//input[@class="btn btn-default"]')
+    add_displayed_contributor_button = Locator(
+        By.CSS_SELECTOR, '[a.btn.btn-success.contrib-button.btn-mini]'
+    )
+    search_input = Locator(By.XPATH, '//input[@class="form-control"]')
+    resource_type = Locator(
+        By.CSS_SELECTOR, '[data-test-display-resource-type-general]'
+    )
+    resource_language = Locator(
+        By.CSS_SELECTOR, '[data-test-display-resource-language]'
+    )
+    resource_type_dropdown = Locator(
+        By.CSS_SELECTOR, '[data-test-select-resource-type]'
+    )
+    resource_language_dropdown = Locator(
+        By.CSS_SELECTOR, '[data-test-select-resource-language]'
+    )
+
+    dropdown_options = GroupLocator(
+        By.CSS_SELECTOR,
+        '#ember-basic-dropdown-wormhole > div > ul > li>span',
+    )
+
+    def select_from_dropdown_listbox(self, selection):
+        for option in self.dropdown_options:
+            if option.text == selection:
+                option.click()
+                break
+
+    resource_information_save_button = Locator(
+        By.CSS_SELECTOR, '[data-test-save-resource-metadata-button]'
+    )
+    funder_name = Locator(By.XPATH, '//span[@class="ember-power-select-status-icon"]')
+    funder_name_serach_input = Locator(
+        By.XPATH, '//input[@class="ember-power-select-search-input"]'
+    )
+    award_title = Locator(By.XPATH, '//input[@name="award_title"]')
+    award_info_URI = Locator(By.XPATH, '//input[@name="award_uri"]')
+    award_number = Locator(By.XPATH, '//input[@name="award_number"]')
+    add_funder_button = Locator(By.XPATH, '//button[text()="Add funder"]')
+    delete_funder_button = Locator(By.XPATH, '//button[text()="Delete funder"][2]')
+    save_funder_info_button = Locator(
+        By.CSS_SELECTOR, '[data-test-save-funding-metadata-button]'
+    )
+    display_funder_name = Locator(By.CSS_SELECTOR, '[data-test-display-funder-name]')
+    display_award_title = Locator(
+        By.CSS_SELECTOR, '[data-test-display-funder-award-title]'
+    )
+    display_award_number = Locator(
+        By.CSS_SELECTOR, '[data-test-display-funder-award-number]'
+    )
+    dispaly_award_info_uri = Locator(
+        By.CSS_SELECTOR, '[data-test-display-funder-award-uri]'
+    )
+
 
 class RegistrationFilesListPage(BaseSubmittedRegistrationPage):
     url_addition = 'files'

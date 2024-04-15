@@ -1,4 +1,7 @@
+import logging
+
 import pytest
+import requests
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -10,7 +13,12 @@ from api import osf_api
 from pages.project import (
     FilesMetadataPage,
     FilesPage,
+    ProjectMetadataPage,
 )
+from pages.registries import RegistrationMetadataPage
+
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -26,7 +34,7 @@ def file_guid(driver, default_project, session, provider='osfstorage'):
         )
         files_page.goto()
         # Wait for File List items to load
-        WebDriverWait(driver, 15).until(
+        WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located(
                 (By.CSS_SELECTOR, '[data-test-file-list-item]')
             )
@@ -48,7 +56,7 @@ def file_guid(driver, default_project, session, provider='osfstorage'):
         files_page = FilesPage(driver, guid=node_id, addon_provider=provider)
         files_page.goto()
         # Wait for File List items to load
-        WebDriverWait(driver, 15).until(
+        WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located(
                 (By.CSS_SELECTOR, '[data-test-file-list-item]')
             )
@@ -71,6 +79,27 @@ def file_metadata_page(driver, file_guid):
     return file_metadata_page
 
 
+def get_funder_information(funder_name):
+    """This method is used to get the funder information for the
+    given funder name using api link"""
+    url = 'https://staging-share.osf.io/api/v3/index-value-search?valueSearchPropertyPath=funder&acceptMediatype=application%2Fvnd.api%2Bjson'
+    response = requests.get(url)
+    data = response.json()
+    for funder in data['included']:
+        if funder['type'] == 'index-card':
+            if (
+                funder['attributes']['resourceMetadata']['name'][0]['@value']
+                == funder_name
+            ):
+                award_title = funder['attributes']['resourceMetadata']['resourceType'][
+                    0
+                ]['@id']
+                award_uri = funder['attributes']['resourceIdentifier'][0]
+                award_number = funder['id']
+
+    return award_title, award_uri, award_number
+
+
 @pytest.mark.usefixtures('must_be_logged_in')
 class TestFilesMetadata:
     @pytest.fixture()
@@ -90,18 +119,28 @@ class TestFilesMetadata:
         )
         description_input.send_keys(description)
 
+        # Select 'Book' from the resource type listbox
         file_metadata_page.resource_type.click()
-
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located(
-                (By.CSS_SELECTOR, '[data-test-option="Book"]')
+                (
+                    By.CSS_SELECTOR,
+                    '#ember-basic-dropdown-wormhole > div > ul > li>span',
+                )
             )
-        ).click()
+        )
+        file_metadata_page.select_from_dropdown_listbox('Book')
+        # Select 'English' from the resource language listbox
         file_metadata_page.resource_language.click()
         WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located((By.XPATH, '//li/span[text()="English"]'))
-        ).click()
-
+            EC.visibility_of_element_located(
+                (
+                    By.CSS_SELECTOR,
+                    '#ember-basic-dropdown-wormhole > div > ul > li>span',
+                )
+            )
+        )
+        file_metadata_page.select_from_dropdown_listbox('English')
         file_metadata_page.save_metadata_button.click()
         return file_metadata_page
 
@@ -179,13 +218,17 @@ class TestFilesMetadata:
                 (By.CSS_SELECTOR, '[data-test-edit-metadata-button]')
             )
         ).click()
+        # Select 'Collection' from the resource type listbox
         file_metadata_page_with_data.resource_type.click()
-
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located(
-                (By.CSS_SELECTOR, '[data-test-option="Collection"]')
+                (
+                    By.CSS_SELECTOR,
+                    '#ember-basic-dropdown-wormhole > div > ul > li>span',
+                )
             )
-        ).click()
+        )
+        file_metadata_page_with_data.select_from_dropdown_listbox('Collection')
 
         file_metadata_page_with_data.save_metadata_button.click()
         assert (
@@ -209,10 +252,17 @@ class TestFilesMetadata:
                 (By.CSS_SELECTOR, '[data-test-edit-metadata-button]')
             )
         ).click()
+        # Select 'Bengali' from the resource language listbox
         file_metadata_page_with_data.resource_language.click()
         WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located((By.XPATH, '//li/span[text()="Bengali"]'))
-        ).click()
+            EC.visibility_of_element_located(
+                (
+                    By.CSS_SELECTOR,
+                    '#ember-basic-dropdown-wormhole > div > ul > li>span',
+                )
+            )
+        )
+        file_metadata_page_with_data.select_from_dropdown_listbox('Bengali')
 
         file_metadata_page_with_data.save_metadata_button.click()
         assert (
@@ -248,10 +298,7 @@ class TestFilesMetadata:
         assert new_title != file_metadata_page_with_data.files_metadata_title.text
 
     def test_download_file_metadata(self, driver, file_metadata_page_with_data):
-        """This test verifies download file metadata
-        functinality and verifies that latest downloaded
-        file exists in the folder
-        """
+        """This test verifies download functinality."""
         try:
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable(
@@ -260,6 +307,7 @@ class TestFilesMetadata:
             ).click()
 
             if '404' in driver.page_source:
+                # if (driver.getTitle().contains("404")):
                 raise Exception
             else:
                 file_metadata_page_with_data.reload()
@@ -280,4 +328,440 @@ class TestFilesMetadata:
                     utils.verify_file_download(driver, file_name='')
 
         except Exception:
-            print('404 Page not found error.')
+            logger.error('404 Exception caught')
+
+
+@pytest.mark.usefixtures('must_be_logged_in')
+class TestProjectMetadata:
+    @pytest.fixture()
+    def project_metadata_page(self, driver, default_project):
+        project_metadata_page = ProjectMetadataPage(driver, guid=default_project.id)
+        project_metadata_page.goto()
+        return project_metadata_page
+
+    @markers.smoke_test
+    @markers.core_functionality
+    def test_edit_metadata_description(self, driver, project_metadata_page, fake):
+        """This test verifies that the node level metadata field
+        description is editable and changes are saved."""
+
+        new_description = fake.sentence(nb_words=4)
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-test-edit-node-description-button]')
+            )
+        ).click()
+
+        description_input = driver.find_element_by_css_selector(
+            '[data-test-description-field] textarea'
+        )
+        description_input.clear()
+        description_input.send_keys(new_description)
+        project_metadata_page.save_description_button.click()
+        assert new_description == project_metadata_page.description.text
+
+    @markers.smoke_test
+    @markers.core_functionality
+    def test_edit_contributors(self, driver, project_metadata_page):
+        """This test verifies that user can add/remove
+        contributors to project metadata."""
+
+        contributors_list = project_metadata_page.contributors_list.text
+        if settings.DOMAIN == 'test':
+            new_user = 'Selenium Test User (Do Not Use)'
+        elif settings.DOMAIN == 'prod':
+            new_user = 'OSF Tester'
+        else:
+            new_user = 'Selenium Staging'
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-test-edit-contributors]')
+            )
+        ).click()
+
+        if new_user in contributors_list:
+
+            WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located(
+                    (By.XPATH, '//table[@id="manageContributorsTable"]')
+                )
+            )
+            contributor_table_path = '//table[@id="manageContributorsTable"]'
+            rowno_user, contributors_table_data = utils.read_data_from_table(
+                driver, contributor_table_path, check_match=True, item_match=new_user
+            )
+            driver.find_element_by_xpath(
+                contributor_table_path + '/tbody/tr[' + str(rowno_user) + ']/td[5]'
+            ).click()
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (
+                    By.CSS_SELECTOR,
+                    'a.btn.btn-success.btn-sm.m-l-md[href="#addContributors"]',
+                )
+            )
+        ).click()
+
+        project_metadata_page.search_input.click()
+        project_metadata_page.search_input.send_keys(new_user)
+        project_metadata_page.contributor_search_button.click()
+
+        # Get the row number for the user from the search table
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (
+                    By.XPATH,
+                    '//div[@class="row"]/div[@class="col-md-4"]/table[@class="table-condensed table-hover"]',
+                )
+            )
+        )
+        search_table_path = '//table[@class="table-condensed table-hover"]'
+        rno, search_table_data = utils.read_data_from_table(
+            driver, search_table_path, check_match=True, item_match=new_user
+        )
+        # Click on the Add button of the row number for the user from the search table to add the new contributor user
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, search_table_path + '/tbody/tr[' + str(rno) + ']/td[1]')
+            )
+        ).click()
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, '//a[@class="btn btn-success"]'))
+        ).click()
+
+        project_metadata_page.reload()
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (By.XPATH, '//table[@id="manageContributorsTable"]')
+            )
+        )
+        contributor_table_path = '//table[@id="manageContributorsTable"]'
+        # Get the total number of rows in contributors table
+        rowno, contributor_table_data = utils.read_data_from_table(
+            driver, contributor_table_path, check_match=False
+        )
+
+        # Get the user name from the last row which is added recently
+        user = driver.find_element_by_xpath(
+            contributor_table_path + '/tbody/tr[' + str(rowno) + ']/td[2]'
+        )
+        assert new_user in user.text
+
+    @markers.smoke_test
+    @markers.core_functionality
+    def test_edit_resource_information(self, driver, project_metadata_page):
+        """This test verifies that user can add/remove
+        resource information to project metadata."""
+        orig_resource_type = project_metadata_page.resource_type.text
+        orig_resource_language = project_metadata_page.resource_language.text
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-test-edit-resource-metadata-button]')
+            )
+        ).click()
+
+        # Select 'Book' from the resource type listbox
+        project_metadata_page.resource_type_dropdown.click()
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (
+                    By.CSS_SELECTOR,
+                    '#ember-basic-dropdown-wormhole > div > ul > li>span',
+                )
+            )
+        )
+        project_metadata_page.select_from_dropdown_listbox('Book')
+        # Select 'English' from the resource language listbox
+        project_metadata_page.resource_language_dropdown.click()
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (
+                    By.CSS_SELECTOR,
+                    '#ember-basic-dropdown-wormhole > div > ul > li>span',
+                )
+            )
+        )
+        project_metadata_page.select_from_dropdown_listbox('English')
+
+        project_metadata_page.resource_information_save_button.click()
+        assert orig_resource_type != project_metadata_page.resource_type.text
+        assert orig_resource_language != project_metadata_page.resource_language.text
+
+    @markers.smoke_test
+    @markers.core_functionality
+    def test_edit_support_funding_information(
+        self, driver, project_metadata_page, fake
+    ):
+        """This test verifies that user can add/remove
+        funder information to project metadata."""
+
+        funder_name = 'NFL Charities'
+        # Get the funder information for the given funder name
+        award_title, award_uri, award_number = get_funder_information(funder_name)
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-test-edit-funding-metadata-button]')
+            )
+        ).click()
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
+        ).click()
+
+        project_metadata_page.funder_name.click()
+
+        project_metadata_page.funder_name_serach_input.send_keys(funder_name)
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (By.CSS_SELECTOR, '[data-option-index="0"]')
+            )
+        ).click()
+        project_metadata_page.award_title.click()
+        project_metadata_page.award_title.send_keys(award_title)
+        project_metadata_page.award_info_URI.click()
+        project_metadata_page.award_info_URI.send_keys(award_uri)
+        project_metadata_page.award_number.click()
+        project_metadata_page.award_number.send_keys(award_number)
+        project_metadata_page.add_funder_button.click()
+        project_metadata_page.scroll_into_view(
+            project_metadata_page.delete_funder_button.element
+        )
+        project_metadata_page.delete_funder_button.click()
+        project_metadata_page.save_funder_info_button.click()
+
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (By.CSS_SELECTOR, '[data-test-metadata-header]')
+            )
+        )
+
+        assert funder_name in project_metadata_page.display_funder_name.text
+        assert award_title in project_metadata_page.display_award_title.text
+        assert award_number in project_metadata_page.display_award_number.text
+        assert award_uri in project_metadata_page.dispaly_award_info_uri.text
+
+
+@pytest.mark.usefixtures('must_be_logged_in')
+class TestRegistrationMetadata:
+    @pytest.fixture()
+    def registration_metadata_page(self, driver, default_project):
+        registration_metadata_page = RegistrationMetadataPage(
+            driver, guid=default_project.id
+        )
+        registration_metadata_page.goto()
+        return registration_metadata_page
+
+    @markers.smoke_test
+    @markers.core_functionality
+    def test_edit_metadata_description(self, driver, registration_metadata_page, fake):
+        """This test verifies that the registration metadata field
+        description is editable and changes are saved."""
+
+        new_description = fake.sentence(nb_words=4)
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-test-edit-node-description-button]')
+            )
+        ).click()
+
+        description_input = driver.find_element_by_css_selector(
+            '[data-test-description-field] textarea'
+        )
+        description_input.clear()
+        description_input.send_keys(new_description)
+        registration_metadata_page.save_metadata_description_button.click()
+        assert new_description == registration_metadata_page.metadata_description.text
+
+    @markers.smoke_test
+    @markers.core_functionality
+    def test_edit_contributors(self, driver, registration_metadata_page):
+        """This test verifies that user can add/remove
+        contributors to registration metadata."""
+
+        contributors_list = registration_metadata_page.contributors_list.text
+        if settings.DOMAIN == 'test':
+            new_user = 'Selenium Test User (Do Not Use)'
+        elif settings.DOMAIN == 'prod':
+            new_user = 'OSF Tester'
+        else:
+            new_user = 'Selenium Staging'
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-test-edit-contributors]')
+            )
+        ).click()
+
+        if new_user in contributors_list:
+            WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located(
+                    (By.XPATH, '//table[@id="manageContributorsTable"]')
+                )
+            )
+            contributor_table_path = '//table[@id="manageContributorsTable"]'
+            rowno_user, contributors_table_data = utils.read_data_from_table(
+                driver, contributor_table_path, check_match=True, item_match=new_user
+            )
+            driver.find_element_by_xpath(
+                contributor_table_path + '/tbody/tr[' + str(rowno_user) + ']/td[5]'
+            ).click()
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (
+                    By.CSS_SELECTOR,
+                    'a.btn.btn-success.btn-sm.m-l-md[href="#addContributors"]',
+                )
+            )
+        ).click()
+
+        registration_metadata_page.search_input.click()
+        registration_metadata_page.search_input.send_keys(new_user)
+        registration_metadata_page.contributor_search_button.click()
+
+        # Get the row number for the user from the search table
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (
+                    By.XPATH,
+                    '//div[@class="row"]/div[@class="col-md-4"]/table[@class="table-condensed table-hover"]',
+                )
+            )
+        )
+        search_table_path = '//table[@class="table-condensed table-hover"]'
+        rno, search_table_data = utils.read_data_from_table(
+            driver, search_table_path, check_match=True, item_match=new_user
+        )
+        # Click on the Add button of the row number for the user from the search table to add the new contributor user
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, search_table_path + '/tbody/tr[' + str(rno) + ']/td[1]')
+            )
+        ).click()
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, '//a[@class="btn btn-success"]'))
+        ).click()
+
+        registration_metadata_page.reload()
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (By.XPATH, '//table[@id="manageContributorsTable"]')
+            )
+        )
+        contributor_table_path = '//table[@id="manageContributorsTable"]'
+        # Get the total number of rows in contributors table
+        rowno, contributor_table_data = utils.read_data_from_table(
+            driver, contributor_table_path, check_match=False
+        )
+
+        # Get the user name from the last row which is added recently
+        user = driver.find_element_by_xpath(
+            contributor_table_path + '/tbody/tr[' + str(rowno) + ']/td[2]'
+        )
+        assert new_user in user.text
+
+    @markers.smoke_test
+    @markers.core_functionality
+    def test_edit_resource_information(self, driver, registration_metadata_page):
+        """This test verifies that user can add/remove
+        resource information to registration metadata."""
+
+        orig_resource_type = registration_metadata_page.resource_type.text
+        orig_resource_language = registration_metadata_page.resource_language.text
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-test-edit-resource-metadata-button]')
+            )
+        ).click()
+
+        # Select 'Book' from the resource type listbox
+        registration_metadata_page.resource_type_dropdown.click()
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (
+                    By.CSS_SELECTOR,
+                    '#ember-basic-dropdown-wormhole > div > ul > li>span',
+                )
+            )
+        )
+        registration_metadata_page.select_from_dropdown_listbox('Book')
+        # Select 'English' from the resource language listbox
+        registration_metadata_page.resource_language_dropdown.click()
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (
+                    By.CSS_SELECTOR,
+                    '#ember-basic-dropdown-wormhole > div > ul > li>span',
+                )
+            )
+        )
+        registration_metadata_page.select_from_dropdown_listbox('English')
+
+        registration_metadata_page.resource_information_save_button.click()
+        assert orig_resource_type != registration_metadata_page.resource_type.text
+        assert (
+            orig_resource_language != registration_metadata_page.resource_language.text
+        )
+
+    @markers.smoke_test
+    @markers.core_functionality
+    def test_edit_support_funding_information(
+        self, driver, registration_metadata_page, fake
+    ):
+        """This test verifies that user can add/remove
+        funder information to registration metadata."""
+
+        funder_name = 'NFL Charities'
+        # Get funder information for the given funder name
+        award_title, award_info_uri, award_number = get_funder_information(funder_name)
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-test-edit-funding-metadata-button]')
+            )
+        ).click()
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
+        ).click()
+
+        registration_metadata_page.funder_name.click()
+
+        registration_metadata_page.funder_name_serach_input.send_keys(funder_name)
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (By.CSS_SELECTOR, '[data-option-index="0"]')
+            )
+        ).click()
+        registration_metadata_page.award_title.click()
+        registration_metadata_page.award_title.send_keys(award_title)
+        registration_metadata_page.award_info_URI.click()
+        registration_metadata_page.award_info_URI.send_keys(award_info_uri)
+        registration_metadata_page.award_number.click()
+        registration_metadata_page.award_number.send_keys(award_number)
+        registration_metadata_page.add_funder_button.click()
+
+        registration_metadata_page.scroll_into_view(
+            registration_metadata_page.delete_funder_button.element
+        )
+        registration_metadata_page.delete_funder_button.click()
+        registration_metadata_page.save_funder_info_button.click()
+
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (By.CSS_SELECTOR, '[data-test-metadata-header]')
+            )
+        )
+
+        assert funder_name in registration_metadata_page.display_funder_name.text
+        assert award_title in registration_metadata_page.display_award_title.text
+        assert award_number in registration_metadata_page.display_award_number.text
+        assert award_info_uri in registration_metadata_page.dispaly_award_info_uri.text

@@ -181,3 +181,25 @@ def get_guid_from_url(url, itemno):
     url_string_list = url.split('/')
     guid = url_string_list[itemno]
     return guid
+
+
+def read_data_from_table(driver, table_path, check_match, item_match=None):
+    datalist = []
+    table_data = driver.find_element_by_xpath(table_path)
+    path1 = table_path + '/tbody/tr'
+    rows = table_data.find_elements_by_xpath(path1)
+    rlen = len(rows)
+
+    for i in range(1, rlen + 1):
+        path2 = path1 + '[' + str(i) + ']/td'
+        items = driver.find_elements_by_xpath(path2)
+        clen = len(items)
+        for j in range(1, clen + 1):
+            path3 = path2 + '[' + str(j) + ']'
+            cell_data = driver.find_element_by_xpath(path3).text
+            datalist.append(cell_data)
+            if check_match:
+                if item_match in cell_data:
+                    return i, datalist
+
+    return rlen, datalist
