@@ -54,6 +54,7 @@ DOMAIN = env('DOMAIN', 'stage1')
 
 NEW_USER_EMAIL = env('NEW_USER_EMAIL')
 
+
 # Preferred node must be set to run tests on production
 PREFERRED_NODE = env('PREFERRED_NODE', None)
 # Initialize Popular Pages environment variable to None which is what it should be for
@@ -146,6 +147,7 @@ STAGE2 = DOMAIN == 'stage2'
 STAGE3 = DOMAIN == 'stage3'
 TEST = DOMAIN == 'test'
 PRODUCTION = DOMAIN == 'prod'
+FUNDER_INFO_URL = 'https://staging-share.osf.io/api/v3/index-value-search?valueSearchPropertyPath=funder&acceptMediatype=application%2Fvnd.api%2Bjson'
 
 # Users for testing CAS login scemarios
 DEACTIVATED_USER = env('DEACTIVATED_USER')
