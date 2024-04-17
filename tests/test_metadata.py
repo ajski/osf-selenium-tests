@@ -82,7 +82,7 @@ def file_metadata_page(driver, file_guid):
 def get_funder_information(funder_name):
     """This method is used to get the funder information for the
     given funder name using api link"""
-    url = 'https://staging-share.osf.io/api/v3/index-value-search?valueSearchPropertyPath=funder&acceptMediatype=application%2Fvnd.api%2Bjson'
+    url = settings.FUNDER_INFO_URL
     response = requests.get(url)
     data = response.json()
     for funder in data['included']:
@@ -311,11 +311,8 @@ class TestFilesMetadata:
                 raise Exception
             else:
                 file_metadata_page_with_data.reload()
-                WebDriverWait(driver, 10).until(
-                    EC.visibility_of_element_located(
-                        (By.CSS_SELECTOR, '[data-test-filename')
-                    )
-                )
+                FilesMetadataPage(driver, verify=True)
+
                 # Verify File Download Functionality
                 if settings.DRIVER != 'Remote':
                     url = driver.find_element_by_css_selector(

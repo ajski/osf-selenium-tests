@@ -497,7 +497,6 @@ class FilesMetadataPage(GuidBasePage):
     base_url = settings.OSF_HOME + '/{guid}'
 
     identity = Locator(By.CSS_SELECTOR, '[data-test-filename]', settings.LONG_TIMEOUT)
-    metadata_identity = Locator(By.CSS_SELECTOR, '[data-test-metadata-tab]')
     heading = Locator(By.CSS_SELECTOR, '[h2._metadata-heading_oqi4qj]')
     files_metadata_edit_button = Locator(
         By.CSS_SELECTOR, '[data-test-edit-metadata-button]'
