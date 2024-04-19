@@ -167,10 +167,10 @@ class TestFilesMetadata:
         )
         title_input.clear()
         title_input.send_keys(new_title)
-
         file_metadata_page_with_data.save_metadata_button.click()
-
         assert new_title == file_metadata_page_with_data.files_metadata_title.text
+        file_metadata_tab = utils.switch_to_new_tab(driver)
+        utils.close_current_tab(driver, file_metadata_tab)
 
     @markers.smoke_test
     @markers.core_functionality
@@ -200,6 +200,8 @@ class TestFilesMetadata:
             new_description
             == file_metadata_page_with_data.files_metadata_description.text
         )
+        file_metadata_tab = utils.switch_to_new_tab(driver)
+        utils.close_current_tab(driver, file_metadata_tab)
 
     @markers.smoke_test
     @markers.core_functionality
@@ -235,6 +237,8 @@ class TestFilesMetadata:
             orig_resource_type
             != file_metadata_page_with_data.files_metadata_resource_type.text
         )
+        file_metadata_tab = utils.switch_to_new_tab(driver)
+        utils.close_current_tab(driver, file_metadata_tab)
 
     @markers.smoke_test
     @markers.core_functionality
@@ -269,6 +273,8 @@ class TestFilesMetadata:
             orig_resource_language
             != file_metadata_page_with_data.files_metadata_resource_language.text
         )
+        file_metadata_tab = utils.switch_to_new_tab(driver)
+        utils.close_current_tab(driver, file_metadata_tab)
 
     @markers.smoke_test
     @markers.core_functionality
@@ -296,6 +302,8 @@ class TestFilesMetadata:
         title_input.send_keys(new_title)
         file_metadata_page_with_data.cancel_editing_button.click()
         assert new_title != file_metadata_page_with_data.files_metadata_title.text
+        file_metadata_tab = utils.switch_to_new_tab(driver)
+        utils.close_current_tab(driver, file_metadata_tab)
 
     def test_download_file_metadata(self, driver, file_metadata_page_with_data):
         """This test verifies download functinality."""
@@ -326,6 +334,8 @@ class TestFilesMetadata:
 
         except Exception:
             logger.error('404 Exception caught')
+        file_metadata_tab = utils.switch_to_new_tab(driver)
+        utils.close_current_tab(driver, file_metadata_tab)
 
 
 @pytest.mark.usefixtures('must_be_logged_in')
