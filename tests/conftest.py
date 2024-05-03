@@ -169,3 +169,19 @@ def project_with_file(session, default_project):
     else:
         osf_api.upload_fake_file(session, default_project)
     return default_project
+
+
+@pytest.fixture
+def default_project_with_metadata(session):
+    """Creates a new project through the api and returns it. Deletes the project at the end of the test run.
+    If PREFERRED_NODE is set, returns the APIDetail of preferred node.
+    """
+    if settings.PREFERRED_NODE:
+        project = osf_api.get_node(session)
+        osf_api.update_custom_project_metadata(session, node_id=project.id)
+        yield project
+    else:
+        project = osf_api.create_project(session, title='OSF Test Project')
+        osf_api.update_custom_project_metadata(session, node_id=project.id)
+        yield project
+        project.delete()

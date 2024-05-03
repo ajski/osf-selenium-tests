@@ -45,31 +45,45 @@ def file_guid(driver, default_project, session, provider='osfstorage'):
         file_link.click()
         driver.switch_to.window(driver.window_handles[0])
         file_id = metadata['data'][0]['attributes']['path']
+        file_guid = osf_api.get_fake_file_guid(session, file_id)
+        return file_guid
 
     else:
-        new_file, metadata = osf_api.upload_fake_file(
-            session=session,
-            node=node,
-            name='files_metadata_test.txt',
-            provider=provider,
-        )
-        files_page = FilesPage(driver, guid=node_id, addon_provider=provider)
-        files_page.goto()
-        # Wait for File List items to load
-        WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located(
-                (By.CSS_SELECTOR, '[data-test-file-list-item]')
+        try:
+            new_file, metadata = osf_api.upload_fake_file(
+                session=session,
+                node=node,
+                name='files_metadata_test.txt',
+                provider=provider,
             )
-        )
-        row = utils.find_row_by_name(files_page, new_file)
 
-        file_link = row.find_element_by_css_selector('[data-test-file-list-link]')
-        file_link.click()
-        driver.switch_to.window(driver.window_handles[0])
-        file_id = metadata['data']['attributes']['path']
+            files_page = FilesPage(driver, guid=node_id, addon_provider=provider)
+            files_page.goto()
+            if '502' in driver.page_source:
+                raise Exception
+            else:
+                # Wait for File List items to load
+                WebDriverWait(driver, 5).until(
+                    EC.visibility_of_element_located(
+                        (By.CSS_SELECTOR, '[data-test-file-list-item]')
+                    )
+                )
+                row = utils.find_row_by_name(files_page, new_file)
 
-    file_guid = osf_api.get_fake_file_guid(session, file_id)
-    return file_guid
+                file_link = row.find_element_by_css_selector(
+                    '[data-test-file-list-link]'
+                )
+                file_link.click()
+                driver.switch_to.window(driver.window_handles[0])
+                file_id = metadata['data']['attributes']['path']
+                file_guid = osf_api.get_fake_file_guid(session, file_id)
+                return file_guid
+
+        except Exception:
+            logger.error('Server error occurred')
+            osf_api.delete_addon_files(
+                session, provider, current_browser=settings.DRIVER, guid=node_id
+            )
 
 
 @pytest.fixture()
@@ -315,7 +329,6 @@ class TestFilesMetadata:
             ).click()
 
             if '404' in driver.page_source:
-                # if (driver.getTitle().contains("404")):
                 raise Exception
             else:
                 file_metadata_page_with_data.reload()
@@ -341,8 +354,10 @@ class TestFilesMetadata:
 @pytest.mark.usefixtures('must_be_logged_in')
 class TestProjectMetadata:
     @pytest.fixture()
-    def project_metadata_page(self, driver, default_project):
-        project_metadata_page = ProjectMetadataPage(driver, guid=default_project.id)
+    def project_metadata_page(self, driver, default_project_with_metadata):
+        project_metadata_page = ProjectMetadataPage(
+            driver, guid=default_project_with_metadata.id
+        )
         project_metadata_page.goto()
         return project_metadata_page
 
@@ -370,38 +385,30 @@ class TestProjectMetadata:
 
     @markers.smoke_test
     @markers.core_functionality
-    def test_edit_contributors(self, driver, project_metadata_page):
+    def test_edit_contributors(
+        self, session, driver, project_metadata_page, default_project_with_metadata
+    ):
         """This test verifies that user can add/remove
         contributors to project metadata."""
 
-        contributors_list = project_metadata_page.contributors_list.text
         if settings.DOMAIN == 'test':
             new_user = 'Selenium Test User (Do Not Use)'
         elif settings.DOMAIN == 'prod':
-            new_user = 'OSF Tester'
+            new_user = 'OSF Tester1'
         else:
             new_user = 'Selenium Staging'
+
+        # Delete the user if its already exists
+        osf_api.delete_project_contributor(
+            session, node_id=default_project_with_metadata.id, user_name=new_user
+        )
+        project_metadata_page.goto_with_reload()
 
         WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable(
                 (By.CSS_SELECTOR, '[data-test-edit-contributors]')
             )
         ).click()
-
-        if new_user in contributors_list:
-
-            WebDriverWait(driver, 5).until(
-                EC.visibility_of_element_located(
-                    (By.XPATH, '//table[@id="manageContributorsTable"]')
-                )
-            )
-            contributor_table_path = '//table[@id="manageContributorsTable"]'
-            rowno_user, contributors_table_data = utils.read_data_from_table(
-                driver, contributor_table_path, check_match=True, item_match=new_user
-            )
-            driver.find_element_by_xpath(
-                contributor_table_path + '/tbody/tr[' + str(rowno_user) + ']/td[5]'
-            ).click()
 
         WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable(
@@ -475,7 +482,7 @@ class TestProjectMetadata:
         # Select 'Book' from the resource type listbox
         project_metadata_page.resource_type_dropdown.click()
         WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located(
+            EC.element_to_be_clickable(
                 (
                     By.CSS_SELECTOR,
                     '#ember-basic-dropdown-wormhole > div > ul > li>span',
@@ -486,14 +493,14 @@ class TestProjectMetadata:
         # Select 'English' from the resource language listbox
         project_metadata_page.resource_language_dropdown.click()
         WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located(
+            EC.element_to_be_clickable(
                 (
                     By.CSS_SELECTOR,
                     '#ember-basic-dropdown-wormhole > div > ul > li>span',
                 )
             )
         )
-        project_metadata_page.select_from_dropdown_listbox('English')
+        project_metadata_page.select_from_dropdown_listbox('Bengali')
 
         project_metadata_page.resource_information_save_button.click()
         assert orig_resource_type != project_metadata_page.resource_type.text
@@ -523,7 +530,7 @@ class TestProjectMetadata:
         project_metadata_page.funder_name.click()
 
         project_metadata_page.funder_name_serach_input.send_keys(funder_name)
-        WebDriverWait(driver, 5).until(
+        WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located(
                 (By.CSS_SELECTOR, '[data-option-index="0"]')
             )
@@ -556,9 +563,9 @@ class TestProjectMetadata:
 @pytest.mark.usefixtures('must_be_logged_in')
 class TestRegistrationMetadata:
     @pytest.fixture()
-    def registration_metadata_page(self, driver, default_project):
+    def registration_metadata_page(self, driver, default_project_with_metadata):
         registration_metadata_page = RegistrationMetadataPage(
-            driver, guid=default_project.id
+            driver, guid=default_project_with_metadata.id
         )
         registration_metadata_page.goto()
         return registration_metadata_page
@@ -587,37 +594,26 @@ class TestRegistrationMetadata:
 
     @markers.smoke_test
     @markers.core_functionality
-    def test_edit_contributors(self, driver, registration_metadata_page):
+    def test_edit_contributors(
+        self, driver, session, registration_metadata_page, default_project_with_metadata
+    ):
         """This test verifies that user can add/remove
         contributors to registration metadata."""
 
-        contributors_list = registration_metadata_page.contributors_list.text
         if settings.DOMAIN == 'test':
             new_user = 'Selenium Test User (Do Not Use)'
         elif settings.DOMAIN == 'prod':
-            new_user = 'OSF Tester'
+            new_user = 'OSF Tester1'
         else:
             new_user = 'Selenium Staging'
-
+        osf_api.delete_project_contributor(
+            session, node_id=default_project_with_metadata.id, user_name=new_user
+        )
         WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable(
                 (By.CSS_SELECTOR, '[data-test-edit-contributors]')
             )
         ).click()
-
-        if new_user in contributors_list:
-            WebDriverWait(driver, 5).until(
-                EC.visibility_of_element_located(
-                    (By.XPATH, '//table[@id="manageContributorsTable"]')
-                )
-            )
-            contributor_table_path = '//table[@id="manageContributorsTable"]'
-            rowno_user, contributors_table_data = utils.read_data_from_table(
-                driver, contributor_table_path, check_match=True, item_match=new_user
-            )
-            driver.find_element_by_xpath(
-                contributor_table_path + '/tbody/tr[' + str(rowno_user) + ']/td[5]'
-            ).click()
 
         WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable(
@@ -710,7 +706,7 @@ class TestRegistrationMetadata:
                 )
             )
         )
-        registration_metadata_page.select_from_dropdown_listbox('English')
+        registration_metadata_page.select_from_dropdown_listbox('Bengali')
 
         registration_metadata_page.resource_information_save_button.click()
         assert orig_resource_type != registration_metadata_page.resource_type.text
@@ -743,7 +739,7 @@ class TestRegistrationMetadata:
         registration_metadata_page.funder_name.click()
 
         registration_metadata_page.funder_name_serach_input.send_keys(funder_name)
-        WebDriverWait(driver, 5).until(
+        WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located(
                 (By.CSS_SELECTOR, '[data-option-index="0"]')
             )

@@ -1070,3 +1070,62 @@ def get_existing_file_data(session, node_id=settings.PREFERRED_NODE):
     data = session.get(files_url + 'osfstorage/')
     name = data['data'][0]['attributes']['name']
     return name, data
+
+
+def update_custom_project_metadata(session, node_id):
+    """Updates project metadata fields resource_type and
+    resource_language with custom values"""
+    url = 'v2/custom_item_metadata_records/{}/'.format(node_id)
+    raw_payload = {
+        'data': {
+            'id': node_id,
+            'type': 'custom-item-metadata-records',
+            'attributes': {
+                'language': 'eng',
+                'resource_type_general': 'Collection',
+                'funders': [
+                    {
+                        'funder_name': 'American Society for Quality',
+                        'funder_identifier': 'http://dx.doi.org/10.13039/100007495',
+                        'funder_identifier_type': 'Crossref Funder ID',
+                        'award_number': '',
+                        'award_uri': 'https://test.osf.io',
+                        'award_title': 'Quality Assurance Award',
+                    }
+                ],
+            },
+        }
+    }
+    session.put(url=url, raw_body=json.dumps(raw_payload))
+
+
+def delete_project_contributor(session, node_id, user_name):
+    """This method deletes the given contributor
+    from contributors of the given project guid"""
+
+    url = '/v2/nodes/{}/contributors/'.format(node_id)
+    data = session.get(url)['data']
+
+    for i in range(0, len(data)):
+        if data[i]['embeds']['users']['data']['attributes']['full_name'] == user_name:
+            user_id = data[i]['embeds']['users']['data']['id']
+            delete_url = '/v2/nodes/{}/contributors/{}/'.format(node_id, user_id)
+            session.delete(delete_url, item_type='users')
+            break
+
+
+def delete_registration_contributor(session, registration_id, user_name):
+    """This method deletes the given contributor
+    from contributors of the given project guid"""
+
+    url = '/v2/registrations/{}/contributors/'.format(registration_id)
+    data = session.get(url)['data']
+
+    for i in range(0, len(data)):
+        if data[i]['embeds']['users']['data']['attributes']['full_name'] == user_name:
+            user_id = data[i]['embeds']['users']['data']['id']
+            delete_url = '/v2/registrations/{}/contributors/{}/'.format(
+                registration_id, user_id
+            )
+            session.delete(delete_url, item_type='users')
+            break
