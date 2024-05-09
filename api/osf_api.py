@@ -1073,8 +1073,8 @@ def get_existing_file_data(session, node_id=settings.PREFERRED_NODE):
 
 
 def update_custom_project_metadata(session, node_id):
-    """Updates project metadata fields resource_type and
-    resource_language with custom values"""
+    """Updates project metadata fields resource_type,
+    resource_language  and support funder information with custom values"""
     url = 'v2/custom_item_metadata_records/{}/'.format(node_id)
     raw_payload = {
         'data': {
@@ -1101,7 +1101,7 @@ def update_custom_project_metadata(session, node_id):
 
 def delete_project_contributor(session, node_id, user_name):
     """This method deletes the given contributor
-    from contributors of the given project guid"""
+    from contributors list for the given project guid"""
 
     url = '/v2/nodes/{}/contributors/'.format(node_id)
     data = session.get(url)['data']
@@ -1114,18 +1114,80 @@ def delete_project_contributor(session, node_id, user_name):
             break
 
 
-def delete_registration_contributor(session, registration_id, user_name):
-    """This method deletes the given contributor
-    from contributors of the given project guid"""
+def get_most_recent_registration_node_id_by_user(user_name, session):
+    """Return the most recently approved public registration node id by the given user.
+    The /v2/registrations endpoint currently returns the most recently modified
+    registration sorted first. But we still need to check for a public and
+    approved registration that has not been withdrawn in order to get a
+    registration that is fully accessible.
+    """
+    if not session:
+        session = get_default_session()
+    url = '/v2/registrations/?embed=contributors'
+    page_data = session.get(url)['links']
+    total_registrations = page_data['meta']['total']
+    per_page = 10
+    total_pages = round(total_registrations / per_page)
+    for page in range(1, total_pages):
+        page_url = 'v2/registrations/?embed=contributors&page=%s' % page
+        data = session.get(page_url)['data']
+        if data:
+            for registration in data:
+                if (
+                    registration['attributes']['embargoed']
+                    or registration['attributes']['public']
+                    and registration['attributes']['revision_state'] == 'approved'
+                    and not registration['attributes']['withdrawn']
+                ):
+                    userdata = registration['embeds']['contributors']['data']
 
-    url = '/v2/registrations/{}/contributors/'.format(registration_id)
-    data = session.get(url)['data']
+                    for i in range(0, len(userdata)):
+                        if (
+                            userdata[i]['embeds']['users']['data']['attributes'][
+                                'full_name'
+                            ]
+                            == user_name
+                        ):
+                            return registration['id']
+                            break
+                    else:
+                        continue
+                    break
 
-    for i in range(0, len(data)):
-        if data[i]['embeds']['users']['data']['attributes']['full_name'] == user_name:
-            user_id = data[i]['embeds']['users']['data']['id']
-            delete_url = '/v2/registrations/{}/contributors/{}/'.format(
-                registration_id, user_id
-            )
-            session.delete(delete_url, item_type='users')
-            break
+    return None
+
+
+def update_registration_metadata_with_custom_data(registration_id):
+    """Updates project metadata fields resource_type,
+    resource_language and support funder info with custom values"""
+    session = client.Session(
+        api_base_url=settings.API_DOMAIN,
+        auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
+    )
+    url = 'v2/custom_item_metadata_records/{}/'.format(registration_id)
+    raw_payload = {
+        'data': {
+            'id': registration_id,
+            'type': 'custom-item-metadata-records',
+            'attributes': {
+                'language': 'eng',
+                'resource_type_general': 'Collection',
+                'funders': [
+                    {
+                        'funder_name': 'American Society for Quality',
+                        'funder_identifier': 'http://dx.doi.org/10.13039/100007495',
+                        'funder_identifier_type': 'Crossref Funder ID',
+                        'award_number': '',
+                        'award_uri': 'https://test.osf.io',
+                        'award_title': 'Quality Assurance Award',
+                    }
+                ],
+            },
+        }
+    }
+    session.patch(
+        url=url,
+        raw_body=json.dumps(raw_payload),
+        item_type='registrations',
+        item_id=registration_id,
+    )
