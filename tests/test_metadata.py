@@ -59,7 +59,7 @@ def file_guid(driver, default_project, session, provider='osfstorage'):
 
             files_page = FilesPage(driver, guid=node_id, addon_provider=provider)
             files_page.goto()
-            if '502' in driver.page_source:
+            if '404' in driver.page_source:
                 raise Exception
             else:
                 # Wait for File List items to load
