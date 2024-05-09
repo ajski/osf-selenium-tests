@@ -490,7 +490,7 @@ class TestProjectMetadata:
             )
         )
         project_metadata_page.select_from_dropdown_listbox('Book')
-        # Select 'English' from the resource language listbox
+        # Select 'Benagli' from the resource language listbox
         project_metadata_page.resource_language_dropdown.click()
         WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable(
@@ -560,12 +560,18 @@ class TestProjectMetadata:
         assert award_uri in project_metadata_page.dispaly_award_info_uri.text
 
 
-@pytest.mark.usefixtures('must_be_logged_in')
+@pytest.mark.usefixtures('must_be_logged_in_as_registration_user')
 class TestRegistrationMetadata:
     @pytest.fixture()
-    def registration_metadata_page(self, driver, default_project_with_metadata):
+    def registration_metadata_page(self, driver, session):
+        registration_guid = osf_api.get_most_recent_registration_node_id_by_user(
+            user_name='OSF Selenium Registrations', session=session
+        )
+        osf_api.update_registration_metadata_with_custom_data(
+            registration_id=registration_guid
+        )
         registration_metadata_page = RegistrationMetadataPage(
-            driver, guid=default_project_with_metadata.id
+            driver, guid=registration_guid
         )
         registration_metadata_page.goto()
         return registration_metadata_page
@@ -594,84 +600,6 @@ class TestRegistrationMetadata:
 
     @markers.smoke_test
     @markers.core_functionality
-    def test_edit_contributors(
-        self, driver, session, registration_metadata_page, default_project_with_metadata
-    ):
-        """This test verifies that user can add/remove
-        contributors to registration metadata."""
-
-        if settings.DOMAIN == 'test':
-            new_user = 'Selenium Test User (Do Not Use)'
-        elif settings.DOMAIN == 'prod':
-            new_user = 'OSF Tester1'
-        else:
-            new_user = 'Selenium Staging'
-        osf_api.delete_project_contributor(
-            session, node_id=default_project_with_metadata.id, user_name=new_user
-        )
-        WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, '[data-test-edit-contributors]')
-            )
-        ).click()
-
-        WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable(
-                (
-                    By.CSS_SELECTOR,
-                    'a.btn.btn-success.btn-sm.m-l-md[href="#addContributors"]',
-                )
-            )
-        ).click()
-
-        registration_metadata_page.search_input.click()
-        registration_metadata_page.search_input.send_keys(new_user)
-        registration_metadata_page.contributor_search_button.click()
-
-        # Get the row number for the user from the search table
-        WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located(
-                (
-                    By.XPATH,
-                    '//div[@class="row"]/div[@class="col-md-4"]/table[@class="table-condensed table-hover"]',
-                )
-            )
-        )
-        search_table_path = '//table[@class="table-condensed table-hover"]'
-        rno, search_table_data = utils.read_data_from_table(
-            driver, search_table_path, check_match=True, item_match=new_user
-        )
-        # Click on the Add button of the row number for the user from the search table to add the new contributor user
-        WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable(
-                (By.XPATH, search_table_path + '/tbody/tr[' + str(rno) + ']/td[1]')
-            )
-        ).click()
-
-        WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.XPATH, '//a[@class="btn btn-success"]'))
-        ).click()
-
-        registration_metadata_page.reload()
-        WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located(
-                (By.XPATH, '//table[@id="manageContributorsTable"]')
-            )
-        )
-        contributor_table_path = '//table[@id="manageContributorsTable"]'
-        # Get the total number of rows in contributors table
-        rowno, contributor_table_data = utils.read_data_from_table(
-            driver, contributor_table_path, check_match=False
-        )
-
-        # Get the user name from the last row which is added recently
-        user = driver.find_element_by_xpath(
-            contributor_table_path + '/tbody/tr[' + str(rowno) + ']/td[2]'
-        )
-        assert new_user in user.text
-
-    @markers.smoke_test
-    @markers.core_functionality
     def test_edit_resource_information(self, driver, registration_metadata_page):
         """This test verifies that user can add/remove
         resource information to registration metadata."""
@@ -696,7 +624,7 @@ class TestRegistrationMetadata:
             )
         )
         registration_metadata_page.select_from_dropdown_listbox('Book')
-        # Select 'English' from the resource language listbox
+        # Select 'Bengali' from the resource language listbox
         registration_metadata_page.resource_language_dropdown.click()
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located(

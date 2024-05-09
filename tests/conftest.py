@@ -185,3 +185,12 @@ def default_project_with_metadata(session):
         osf_api.update_custom_project_metadata(session, node_id=project.id)
         yield project
         project.delete()
+
+
+@pytest.fixture(scope='class')
+def must_be_logged_in_as_registration_user(driver):
+    safe_login(
+        driver,
+        user=settings.REGISTRATIONS_USER,
+        password=settings.REGISTRATIONS_USER_PASSWORD,
+    )
