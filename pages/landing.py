@@ -19,20 +19,13 @@ class LandingPage(OSFBasePage):
     learn_more_button = Locator(
         By.CSS_SELECTOR, '[data-analytics-name="Learn more button"]'
     )
-    testimonial_1_button = Locator(
-        By.CSS_SELECTOR, '[data-analytics-name="Go to slide 1"]'
-    )
-    testimonial_2_button = Locator(
-        By.CSS_SELECTOR, '[data-analytics-name="Go to slide 2"]'
-    )
-    testimonial_3_button = Locator(
-        By.CSS_SELECTOR, '[data-analytics-name="Go to slide 3"]'
-    )
     testimonial_1_slide = Locator(By.CSS_SELECTOR, '[data-test-testimonials-slide-1]')
     testimonial_2_slide = Locator(By.CSS_SELECTOR, '[data-test-testimonials-slide-2]')
     testimonial_3_slide = Locator(By.CSS_SELECTOR, '[data-test-testimonials-slide-3]')
     previous_testimonial_arrow = Locator(By.CSS_SELECTOR, '[data-test-previous-arrow]')
     next_testimonial_arrow = Locator(By.CSS_SELECTOR, '[data-test-next-arrow]')
+
+    testimonial_buttons = GroupLocator(By.CSS_SELECTOR, '[data-test-navigation-item]')
     testimonial_view_research_links = GroupLocator(
         By.CSS_SELECTOR, '[data-analytics-name="View research"]'
     )

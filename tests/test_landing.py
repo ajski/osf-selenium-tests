@@ -37,23 +37,23 @@ class TestHomeLandingPage:
         assert 'https://www.cos.io/products/osf' in driver.current_url
 
     def test_testimonials_by_buttons(self, driver, landing_page):
-        landing_page.scroll_into_view(landing_page.testimonial_3_button.element)
+        landing_page.scroll_into_view(landing_page.testimonial_1_slide.element)
         # Verify that Testimonial 1 slide is initially visible
         assert landing_page.testimonial_1_slide.present()
         assert landing_page.testimonial_2_slide.absent()
         assert landing_page.testimonial_3_slide.absent()
         # Click the button above the testimonial carousel to go to Testimonial 3
-        landing_page.testimonial_3_button.click()
+        landing_page.testimonial_buttons[2].click()
         assert landing_page.testimonial_3_slide.present()
         assert landing_page.testimonial_1_slide.absent()
         assert landing_page.testimonial_2_slide.absent()
         # Click the button above the testimonial carousel to go to Testimonial 2
-        landing_page.testimonial_2_button.click()
+        landing_page.testimonial_buttons[1].click()
         assert landing_page.testimonial_2_slide.present()
         assert landing_page.testimonial_1_slide.absent()
         assert landing_page.testimonial_3_slide.absent()
         # Click the button above the testimonial carousel to go to Testimonial 1
-        landing_page.testimonial_1_button.click()
+        landing_page.testimonial_buttons[0].click()
         assert landing_page.testimonial_1_slide.present()
         assert landing_page.testimonial_2_slide.absent()
         assert landing_page.testimonial_3_slide.absent()
@@ -128,7 +128,7 @@ class TestHomeLandingPage:
         landing_page.scroll_into_view(landing_page.testimonial_view_research_links[0])
         assert landing_page.testimonial_1_slide.present()
         # Click the button above the testimonial carousel to go to Testimonial 3
-        landing_page.testimonial_3_button.click()
+        landing_page.testimonial_buttons[2].click()
         assert landing_page.testimonial_3_slide.present()
         # Click the "See his research" link and verify that you are navigated to the User
         # Profile page for Philip Cohen (guid=2u4tf)
