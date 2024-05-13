@@ -1073,8 +1073,8 @@ def get_existing_file_data(session, node_id=settings.PREFERRED_NODE):
 
 
 def update_custom_project_metadata(session, node_id):
-    """Updates project metadata fields resource_type,
-    resource_language  and support funder information with custom values"""
+    """Updates project metadata fields resource_type and
+    resource_language and support funder info with custom values"""
     url = 'v2/custom_item_metadata_records/{}/'.format(node_id)
     raw_payload = {
         'data': {
@@ -1148,7 +1148,7 @@ def get_most_recent_registration_node_id_by_user(user_name, session):
 
 
 def update_registration_metadata_with_custom_data(registration_id):
-    """Updates project metadata fields resource_type,
+    """Updates project metadata fields resource_type and
     resource_language and support funder info with custom values"""
     session = client.Session(
         api_base_url=settings.API_DOMAIN,
@@ -1171,3 +1171,15 @@ def update_registration_metadata_with_custom_data(registration_id):
         item_type='registrations',
         item_id=registration_id,
     )
+
+
+def get_funder_data_project(session, project_guid):
+    """Returns the funder name for a project/registration
+    if project/registration already has funder information data
+    otherwise returns none"""
+
+    url = 'v2/custom_item_metadata_records/{}/'.format(project_guid)
+    data = session.get(url)['data']
+    if not data['attributes']['funders']:
+        return None
+    return data['attributes']['funders'][0]['funder_name']
