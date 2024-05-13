@@ -509,7 +509,7 @@ class TestProjectMetadata:
     @markers.smoke_test
     @markers.core_functionality
     def test_edit_support_funding_information(
-        self, driver, project_metadata_page, fake
+        self, session, driver, project_metadata_page, default_project_with_metadata
     ):
         """This test verifies that user can add/remove
         funder information to project metadata."""
@@ -522,7 +522,11 @@ class TestProjectMetadata:
                 (By.CSS_SELECTOR, '[data-test-edit-funding-metadata-button]')
             )
         ).click()
-        if settings.DOMAIN != 'prod':
+
+        funder_info = osf_api.get_funder_data_project(
+            session, project_guid=default_project_with_metadata.id
+        )
+        if funder_info is None:
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
             ).click()
@@ -646,7 +650,7 @@ class TestRegistrationMetadata:
     @markers.smoke_test
     @markers.core_functionality
     def test_edit_support_funding_information(
-        self, driver, registration_metadata_page, fake
+        self, driver, registration_metadata_page, session
     ):
         """This test verifies that user can add/remove
         funder information to registration metadata."""
@@ -660,7 +664,20 @@ class TestRegistrationMetadata:
                 (By.CSS_SELECTOR, '[data-test-edit-funding-metadata-button]')
             )
         ).click()
-        if settings.DOMAIN != 'prod':
+        registration_guid = osf_api.get_most_recent_registration_node_id_by_user(
+            user_name='OSF Selenium Registrations', session=session
+        )
+        funder_info = osf_api.get_funder_data_project(session, registration_guid)
+        if funder_info is None:
+            WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
+            ).click()
+        else:
+            WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, '//button[text()="Delete funder"]')
+                )
+            ).click()
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
             ).click()
