@@ -1083,16 +1083,6 @@ def update_custom_project_metadata(session, node_id):
             'attributes': {
                 'language': 'eng',
                 'resource_type_general': 'Collection',
-                'funders': [
-                    {
-                        'funder_name': 'American Society for Quality',
-                        'funder_identifier': 'http://dx.doi.org/10.13039/100007495',
-                        'funder_identifier_type': 'Crossref Funder ID',
-                        'award_number': '',
-                        'award_uri': 'https://test.osf.io',
-                        'award_title': 'Quality Assurance Award',
-                    }
-                ],
             },
         }
     }
@@ -1172,16 +1162,6 @@ def update_registration_metadata_with_custom_data(registration_id):
             'attributes': {
                 'language': 'eng',
                 'resource_type_general': 'Collection',
-                'funders': [
-                    {
-                        'funder_name': 'American Society for Quality',
-                        'funder_identifier': 'http://dx.doi.org/10.13039/100007495',
-                        'funder_identifier_type': 'Crossref Funder ID',
-                        'award_number': '',
-                        'award_uri': 'https://test.osf.io',
-                        'award_title': 'Quality Assurance Award',
-                    }
-                ],
             },
         }
     }
