@@ -522,10 +522,10 @@ class TestProjectMetadata:
                 (By.CSS_SELECTOR, '[data-test-edit-funding-metadata-button]')
             )
         ).click()
-
-        WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
-        ).click()
+        if settings.DOMAIN != 'prod':
+            WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
+            ).click()
 
         project_metadata_page.funder_name.click()
 
@@ -545,6 +545,7 @@ class TestProjectMetadata:
         project_metadata_page.scroll_into_view(
             project_metadata_page.delete_funder_button.element
         )
+
         project_metadata_page.delete_funder_button.click()
         project_metadata_page.save_funder_info_button.click()
 
@@ -659,10 +660,10 @@ class TestRegistrationMetadata:
                 (By.CSS_SELECTOR, '[data-test-edit-funding-metadata-button]')
             )
         ).click()
-
-        WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
-        ).click()
+        if settings.DOMAIN != 'prod':
+            WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
+            ).click()
 
         registration_metadata_page.funder_name.click()
 
@@ -684,8 +685,8 @@ class TestRegistrationMetadata:
             registration_metadata_page.delete_funder_button.element
         )
         registration_metadata_page.delete_funder_button.click()
-        registration_metadata_page.save_funder_info_button.click()
 
+        registration_metadata_page.save_funder_info_button.click()
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located(
                 (By.CSS_SELECTOR, '[data-test-metadata-header]')
