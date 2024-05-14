@@ -1104,24 +1104,6 @@ def delete_project_contributor(session, node_id, user_name):
             break
 
 
-def get_most_recent_registration_node_id_by_user(user_name, registration_card):
-    """Return the most recently approved public registration
-    node id by the given user and having the title as given in registration_card
-    """
-    session = client.Session(
-        api_base_url=settings.API_DOMAIN,
-        auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
-    )
-    url = '/v2/registrations/?filter[title][icontains]=selenium'
-    data = session.get(url)['data']
-    if data:
-        for registration in data:
-            if registration['attributes']['title'] == registration_card:
-                return registration['id']
-
-    return None
-
-
 def update_registration_metadata_with_custom_data(registration_id):
     """Updates project metadata fields resource_type and
     resource_language and support funder info with custom values"""
@@ -1173,3 +1155,20 @@ def get_funder_data_registration(registration_guid):
     if not data['attributes']['funders']:
         return None
     return data['attributes']['funders'][0]['funder_name']
+
+
+def get_registration_by_title(encoded_registration_title):
+    """Return the registration node id having the title as given in encoded_registration_title
+    ToDo: Handle URL encoding in python
+    """
+    session = client.Session(
+        api_base_url=settings.API_DOMAIN,
+        auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
+    )
+
+    url = '/v2/registrations/?filter[title]=' + encoded_registration_title
+    data = session.get(url)['data']
+    if data:
+        return data[0]['id']
+
+    return None

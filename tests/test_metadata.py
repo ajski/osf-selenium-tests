@@ -478,7 +478,7 @@ class TestProjectMetadata:
             )
         )
         project_metadata_page.select_from_dropdown_listbox('Book')
-        # Select 'Benagli' from the resource language listbox
+        # Select 'Bengali' from the resource language listbox
         project_metadata_page.resource_language_dropdown.click()
         WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable(
@@ -522,9 +522,9 @@ class TestProjectMetadata:
                     (By.XPATH, '//button[text()="Delete funder"]')
                 )
             ).click()
-        WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
-        ).click()
+            WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
+            ).click()
 
         project_metadata_page.funder_name.click()
 
@@ -544,6 +544,7 @@ class TestProjectMetadata:
         project_metadata_page.scroll_into_view(
             project_metadata_page.delete_funder_button.element
         )
+
         project_metadata_page.delete_funder_button.click()
         project_metadata_page.save_funder_info_button.click()
 
@@ -565,9 +566,9 @@ class TestProjectMetadata:
 class TestRegistrationMetadata:
     @pytest.fixture()
     def registration_metadata_page(self, driver, session):
-        registration_card = 'Selenium Registration for Metadata tests'
-        registration_guid = osf_api.get_most_recent_registration_node_id_by_user(
-            user_name='OSF Selenium Registrations', registration_card=registration_card
+
+        registration_guid = osf_api.get_registration_by_title(
+            'Selenium%20Registration%20for%20Metadata%20tests'
         )
         osf_api.update_registration_metadata_with_custom_data(
             registration_id=registration_guid
@@ -655,9 +656,8 @@ class TestRegistrationMetadata:
                 (By.CSS_SELECTOR, '[data-test-edit-funding-metadata-button]')
             )
         ).click()
-        registration_guid = osf_api.get_most_recent_registration_node_id_by_user(
-            user_name='OSF Selenium Registrations',
-            registration_card='Selenium Registration for Metadata tests',
+        registration_guid = osf_api.get_registration_by_title(
+            'Selenium%20Registration%20for%20Metadata%20tests'
         )
         funder_info = osf_api.get_funder_data_registration(registration_guid)
         if funder_info is None:
@@ -693,6 +693,7 @@ class TestRegistrationMetadata:
         registration_metadata_page.scroll_into_view(
             registration_metadata_page.delete_funder_button.element
         )
+
         registration_metadata_page.delete_funder_button.click()
 
         registration_metadata_page.save_funder_info_button.click()
