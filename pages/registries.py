@@ -146,7 +146,7 @@ class RegistrationMetadataPage(BaseSubmittedRegistrationPage):
         By.CSS_SELECTOR, '[data-test-save-resource-metadata-button]'
     )
     funder_name = Locator(By.XPATH, '//span[@class="ember-power-select-status-icon"]')
-    funder_name_serach_input = Locator(
+    funder_name_search_input = Locator(
         By.XPATH, '//input[@class="ember-power-select-search-input"]'
     )
     award_title = Locator(By.XPATH, '//input[@name="award_title"]')

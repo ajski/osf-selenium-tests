@@ -1104,45 +1104,20 @@ def delete_project_contributor(session, node_id, user_name):
             break
 
 
-def get_most_recent_registration_node_id_by_user(user_name, session):
-    """Return the most recently approved public registration node id by the given user.
-    The /v2/registrations endpoint currently returns the most recently modified
-    registration sorted first. But we still need to check for a public and
-    approved registration that has not been withdrawn in order to get a
-    registration that is fully accessible.
+def get_most_recent_registration_node_id_by_user(user_name, registration_card):
+    """Return the most recently approved public registration
+    node id by the given user and having the title as given in registration_card
     """
-    if not session:
-        session = get_default_session()
-    url = '/v2/registrations/?embed=contributors'
-    page_data = session.get(url)['links']
-    total_registrations = page_data['meta']['total']
-    per_page = 10
-    total_pages = round(total_registrations / per_page)
-    for page in range(1, total_pages):
-        page_url = 'v2/registrations/?embed=contributors&page=%s' % page
-        data = session.get(page_url)['data']
-        if data:
-            for registration in data:
-                if (
-                    registration['attributes']['embargoed']
-                    or registration['attributes']['public']
-                    and registration['attributes']['revision_state'] == 'approved'
-                    and not registration['attributes']['withdrawn']
-                ):
-                    userdata = registration['embeds']['contributors']['data']
-
-                    for i in range(0, len(userdata)):
-                        if (
-                            userdata[i]['embeds']['users']['data']['attributes'][
-                                'full_name'
-                            ]
-                            == user_name
-                        ):
-                            return registration['id']
-                            break
-                    else:
-                        continue
-                    break
+    session = client.Session(
+        api_base_url=settings.API_DOMAIN,
+        auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
+    )
+    url = '/v2/registrations/?filter[title][icontains]=selenium'
+    data = session.get(url)['data']
+    if data:
+        for registration in data:
+            if registration['attributes']['title'] == registration_card:
+                return registration['id']
 
     return None
 
@@ -1179,6 +1154,21 @@ def get_funder_data_project(session, project_guid):
     otherwise returns none"""
 
     url = 'v2/custom_item_metadata_records/{}/'.format(project_guid)
+    data = session.get(url)['data']
+    if not data['attributes']['funders']:
+        return None
+    return data['attributes']['funders'][0]['funder_name']
+
+
+def get_funder_data_registration(registration_guid):
+    """Returns the funder name for a project/registration
+    if project/registration already has funder information data
+    otherwise returns none"""
+    session = client.Session(
+        api_base_url=settings.API_DOMAIN,
+        auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
+    )
+    url = 'v2/custom_item_metadata_records/{}/'.format(registration_guid)
     data = session.get(url)['data']
     if not data['attributes']['funders']:
         return None

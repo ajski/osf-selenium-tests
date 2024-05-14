@@ -115,6 +115,8 @@ def get_funder_information(funder_name):
 
 
 @pytest.mark.usefixtures('must_be_logged_in')
+@markers.smoke_test
+@markers.core_functionality
 class TestFilesMetadata:
     @pytest.fixture()
     def file_metadata_page_with_data(self, driver, file_metadata_page, fake):
@@ -158,8 +160,6 @@ class TestFilesMetadata:
         file_metadata_page.save_metadata_button.click()
         return file_metadata_page
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_change_file_metadata_title(
         self, driver, file_metadata_page_with_data, fake
     ):
@@ -186,8 +186,6 @@ class TestFilesMetadata:
         file_metadata_tab = utils.switch_to_new_tab(driver)
         utils.close_current_tab(driver, file_metadata_tab)
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_change_file_metadata_description(
         self, driver, file_metadata_page_with_data, fake
     ):
@@ -217,8 +215,6 @@ class TestFilesMetadata:
         file_metadata_tab = utils.switch_to_new_tab(driver)
         utils.close_current_tab(driver, file_metadata_tab)
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_change_file_metadata_resource_type(
         self, driver, file_metadata_page_with_data
     ):
@@ -254,8 +250,6 @@ class TestFilesMetadata:
         file_metadata_tab = utils.switch_to_new_tab(driver)
         utils.close_current_tab(driver, file_metadata_tab)
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_change_file_metadata_resource_language(
         self, driver, file_metadata_page_with_data
     ):
@@ -290,8 +284,6 @@ class TestFilesMetadata:
         file_metadata_tab = utils.switch_to_new_tab(driver)
         utils.close_current_tab(driver, file_metadata_tab)
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_cancel_file_metadata_changes(
         self, driver, file_metadata_page_with_data, fake
     ):
@@ -352,6 +344,8 @@ class TestFilesMetadata:
 
 
 @pytest.mark.usefixtures('must_be_logged_in')
+@markers.smoke_test
+@markers.core_functionality
 class TestProjectMetadata:
     @pytest.fixture()
     def project_metadata_page(self, driver, default_project_with_metadata):
@@ -361,8 +355,6 @@ class TestProjectMetadata:
         project_metadata_page.goto()
         return project_metadata_page
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_edit_metadata_description(self, driver, project_metadata_page, fake):
         """This test verifies that the node level metadata field
         description is editable and changes are saved."""
@@ -383,8 +375,6 @@ class TestProjectMetadata:
         project_metadata_page.save_description_button.click()
         assert new_description == project_metadata_page.description.text
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_edit_contributors(
         self, session, driver, project_metadata_page, default_project_with_metadata
     ):
@@ -465,8 +455,6 @@ class TestProjectMetadata:
         )
         assert new_user in user.text
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_edit_resource_information(self, driver, project_metadata_page):
         """This test verifies that user can add/remove
         resource information to project metadata."""
@@ -506,8 +494,6 @@ class TestProjectMetadata:
         assert orig_resource_type != project_metadata_page.resource_type.text
         assert orig_resource_language != project_metadata_page.resource_language.text
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_edit_support_funding_information(
         self, session, driver, project_metadata_page, default_project_with_metadata
     ):
@@ -522,7 +508,7 @@ class TestProjectMetadata:
                 (By.CSS_SELECTOR, '[data-test-edit-funding-metadata-button]')
             )
         ).click()
-
+        # Delete funder info if already exists
         funder_info = osf_api.get_funder_data_project(
             session, project_guid=default_project_with_metadata.id
         )
@@ -530,10 +516,19 @@ class TestProjectMetadata:
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
             ).click()
+        else:
+            WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, '//button[text()="Delete funder"]')
+                )
+            ).click()
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
+        ).click()
 
         project_metadata_page.funder_name.click()
 
-        project_metadata_page.funder_name_serach_input.send_keys(funder_name)
+        project_metadata_page.funder_name_search_input.send_keys(funder_name)
         WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located(
                 (By.CSS_SELECTOR, '[data-option-index="0"]')
@@ -549,7 +544,6 @@ class TestProjectMetadata:
         project_metadata_page.scroll_into_view(
             project_metadata_page.delete_funder_button.element
         )
-
         project_metadata_page.delete_funder_button.click()
         project_metadata_page.save_funder_info_button.click()
 
@@ -566,11 +560,14 @@ class TestProjectMetadata:
 
 
 @pytest.mark.usefixtures('must_be_logged_in_as_registration_user')
+@markers.dont_run_on_prod
+@markers.core_functionality
 class TestRegistrationMetadata:
     @pytest.fixture()
     def registration_metadata_page(self, driver, session):
+        registration_card = 'Selenium Registration for Metadata tests'
         registration_guid = osf_api.get_most_recent_registration_node_id_by_user(
-            user_name='OSF Selenium Registrations', session=session
+            user_name='OSF Selenium Registrations', registration_card=registration_card
         )
         osf_api.update_registration_metadata_with_custom_data(
             registration_id=registration_guid
@@ -581,8 +578,6 @@ class TestRegistrationMetadata:
         registration_metadata_page.goto()
         return registration_metadata_page
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_edit_metadata_description(self, driver, registration_metadata_page, fake):
         """This test verifies that the registration metadata field
         description is editable and changes are saved."""
@@ -603,8 +598,6 @@ class TestRegistrationMetadata:
         registration_metadata_page.save_metadata_description_button.click()
         assert new_description == registration_metadata_page.metadata_description.text
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_edit_resource_information(self, driver, registration_metadata_page):
         """This test verifies that user can add/remove
         resource information to registration metadata."""
@@ -647,8 +640,6 @@ class TestRegistrationMetadata:
             orig_resource_language != registration_metadata_page.resource_language.text
         )
 
-    @markers.smoke_test
-    @markers.core_functionality
     def test_edit_support_funding_information(
         self, driver, registration_metadata_page, session
     ):
@@ -665,9 +656,10 @@ class TestRegistrationMetadata:
             )
         ).click()
         registration_guid = osf_api.get_most_recent_registration_node_id_by_user(
-            user_name='OSF Selenium Registrations', session=session
+            user_name='OSF Selenium Registrations',
+            registration_card='Selenium Registration for Metadata tests',
         )
-        funder_info = osf_api.get_funder_data_project(session, registration_guid)
+        funder_info = osf_api.get_funder_data_registration(registration_guid)
         if funder_info is None:
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
@@ -684,7 +676,7 @@ class TestRegistrationMetadata:
 
         registration_metadata_page.funder_name.click()
 
-        registration_metadata_page.funder_name_serach_input.send_keys(funder_name)
+        registration_metadata_page.funder_name_search_input.send_keys(funder_name)
         WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located(
                 (By.CSS_SELECTOR, '[data-option-index="0"]')
