@@ -1105,8 +1105,8 @@ def delete_project_contributor(session, node_id, user_name):
 
 
 def update_registration_metadata_with_custom_data(registration_id):
-    """Updates project metadata fields resource_type and
-    resource_language and support funder info with custom values"""
+    """Updates registration metadata fields resource_type and
+    resource_language  with custom values"""
     session = client.Session(
         api_base_url=settings.API_DOMAIN,
         auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
@@ -1166,9 +1166,33 @@ def get_registration_by_title(encoded_registration_title):
         auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
     )
 
-    url = '/v2/registrations/?filter[title]=' + encoded_registration_title
+    url = '/v2/registrations/?filter[title] =' + encoded_registration_title
     data = session.get(url)['data']
     if data:
         return data[0]['id']
 
     return None
+
+
+def update_file_metadata(session, file_guid):
+    """Updates file metadata with custom values"""
+    url = 'v2/custom_file_metadata_records/{}/'.format(file_guid)
+    raw_payload = {
+        'data': {
+            'id': file_guid,
+            'type': 'custom-item-metadata-records',
+            'attributes': {
+                'language': 'eng',
+                'resource_type_general': 'Book',
+                'funders': [],
+                'title': 'Selenium Files metadata test',
+                'description': 'This File is created temporarily to verify Files metadata test',
+            },
+        }
+    }
+    session.patch(
+        url=url,
+        raw_body=json.dumps(raw_payload),
+        item_type='registrations',
+        item_id=file_guid,
+    )

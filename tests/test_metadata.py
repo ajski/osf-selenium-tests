@@ -87,7 +87,8 @@ def file_guid(driver, default_project, session, provider='osfstorage'):
 
 
 @pytest.fixture()
-def file_metadata_page(driver, file_guid):
+def file_metadata_page(driver, session, file_guid):
+    osf_api.update_file_metadata(session, file_guid)
     file_metadata_page = FilesMetadataPage(driver, guid=file_guid)
     file_metadata_page.goto()
     return file_metadata_page
@@ -118,56 +119,12 @@ def get_funder_information(funder_name):
 @markers.smoke_test
 @markers.core_functionality
 class TestFilesMetadata:
-    @pytest.fixture()
-    def file_metadata_page_with_data(self, driver, file_metadata_page, fake):
-        title = fake.sentence(nb_words=1)
-        description = fake.sentence(nb_words=4)
-
-        file_metadata_page.files_metadata_edit_button.click()
-        file_metadata_page.edit_title.click()
-        title_input = driver.find_element_by_css_selector(
-            '[data-test-title-field] textarea'
-        )
-        title_input.send_keys(title)
-
-        description_input = driver.find_element_by_css_selector(
-            '[data-test-description-field] textarea'
-        )
-        description_input.send_keys(description)
-
-        # Select 'Book' from the resource type listbox
-        file_metadata_page.resource_type.click()
-        WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located(
-                (
-                    By.CSS_SELECTOR,
-                    '#ember-basic-dropdown-wormhole > div > ul > li>span',
-                )
-            )
-        )
-        file_metadata_page.select_from_dropdown_listbox('Book')
-        # Select 'English' from the resource language listbox
-        file_metadata_page.resource_language.click()
-        WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located(
-                (
-                    By.CSS_SELECTOR,
-                    '#ember-basic-dropdown-wormhole > div > ul > li>span',
-                )
-            )
-        )
-        file_metadata_page.select_from_dropdown_listbox('English')
-        file_metadata_page.save_metadata_button.click()
-        return file_metadata_page
-
-    def test_change_file_metadata_title(
-        self, driver, file_metadata_page_with_data, fake
-    ):
+    def test_change_file_metadata_title(self, driver, file_metadata_page, fake):
         """This test verifies that the file metadata field
         title is editable and changes are saved."""
 
         new_title = fake.sentence(nb_words=1)
-        orig_title = file_metadata_page_with_data.files_metadata_title.text
+        orig_title = file_metadata_page.files_metadata_title.text
         assert orig_title != new_title
         WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable(
@@ -175,25 +132,23 @@ class TestFilesMetadata:
             )
         ).click()
 
-        file_metadata_page_with_data.edit_title.click()
+        file_metadata_page.edit_title.click()
         title_input = driver.find_element_by_css_selector(
             '[data-test-title-field] textarea'
         )
         title_input.clear()
         title_input.send_keys(new_title)
-        file_metadata_page_with_data.save_metadata_button.click()
-        assert new_title == file_metadata_page_with_data.files_metadata_title.text
+        file_metadata_page.save_metadata_button.click()
+        assert new_title == file_metadata_page.files_metadata_title.text
         file_metadata_tab = utils.switch_to_new_tab(driver)
         utils.close_current_tab(driver, file_metadata_tab)
 
-    def test_change_file_metadata_description(
-        self, driver, file_metadata_page_with_data, fake
-    ):
+    def test_change_file_metadata_description(self, driver, file_metadata_page, fake):
         """This test verifies that the file metadata field
         description is editable and changes are saved."""
 
         new_description = fake.sentence(nb_words=1)
-        orig_description = file_metadata_page_with_data.files_metadata_description.text
+        orig_description = file_metadata_page.files_metadata_description.text
         assert orig_description != new_description
 
         WebDriverWait(driver, 5).until(
@@ -207,23 +162,16 @@ class TestFilesMetadata:
         )
         description_input.clear()
         description_input.send_keys(new_description)
-        file_metadata_page_with_data.save_metadata_button.click()
-        assert (
-            new_description
-            == file_metadata_page_with_data.files_metadata_description.text
-        )
+        file_metadata_page.save_metadata_button.click()
+        assert new_description == file_metadata_page.files_metadata_description.text
         file_metadata_tab = utils.switch_to_new_tab(driver)
         utils.close_current_tab(driver, file_metadata_tab)
 
-    def test_change_file_metadata_resource_type(
-        self, driver, file_metadata_page_with_data
-    ):
+    def test_change_file_metadata_resource_type(self, driver, file_metadata_page):
         """This test verifies that the file metadata field
         resource type is editable and changes are saved."""
 
-        orig_resource_type = (
-            file_metadata_page_with_data.files_metadata_resource_type.text
-        )
+        orig_resource_type = file_metadata_page.files_metadata_resource_type.text
 
         WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable(
@@ -231,7 +179,7 @@ class TestFilesMetadata:
             )
         ).click()
         # Select 'Collection' from the resource type listbox
-        file_metadata_page_with_data.resource_type.click()
+        file_metadata_page.resource_type.click()
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located(
                 (
@@ -240,23 +188,20 @@ class TestFilesMetadata:
                 )
             )
         )
-        file_metadata_page_with_data.select_from_dropdown_listbox('Collection')
+        file_metadata_page.select_from_dropdown_listbox('Collection')
 
-        file_metadata_page_with_data.save_metadata_button.click()
+        file_metadata_page.save_metadata_button.click()
         assert (
-            orig_resource_type
-            != file_metadata_page_with_data.files_metadata_resource_type.text
+            orig_resource_type != file_metadata_page.files_metadata_resource_type.text
         )
         file_metadata_tab = utils.switch_to_new_tab(driver)
         utils.close_current_tab(driver, file_metadata_tab)
 
-    def test_change_file_metadata_resource_language(
-        self, driver, file_metadata_page_with_data
-    ):
+    def test_change_file_metadata_resource_language(self, driver, file_metadata_page):
         """This test verifies that the file metadata field
         resource language is editable and changes are saved."""
         orig_resource_language = (
-            file_metadata_page_with_data.files_metadata_resource_language.text
+            file_metadata_page.files_metadata_resource_language.text
         )
 
         WebDriverWait(driver, 5).until(
@@ -265,7 +210,7 @@ class TestFilesMetadata:
             )
         ).click()
         # Select 'Bengali' from the resource language listbox
-        file_metadata_page_with_data.resource_language.click()
+        file_metadata_page.resource_language.click()
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located(
                 (
@@ -274,25 +219,23 @@ class TestFilesMetadata:
                 )
             )
         )
-        file_metadata_page_with_data.select_from_dropdown_listbox('Bengali')
+        file_metadata_page.select_from_dropdown_listbox('Bengali')
 
-        file_metadata_page_with_data.save_metadata_button.click()
+        file_metadata_page.save_metadata_button.click()
         assert (
             orig_resource_language
-            != file_metadata_page_with_data.files_metadata_resource_language.text
+            != file_metadata_page.files_metadata_resource_language.text
         )
         file_metadata_tab = utils.switch_to_new_tab(driver)
         utils.close_current_tab(driver, file_metadata_tab)
 
-    def test_cancel_file_metadata_changes(
-        self, driver, file_metadata_page_with_data, fake
-    ):
+    def test_cancel_file_metadata_changes(self, driver, file_metadata_page, fake):
         """This test verifies the file metadata fields
         title, Description, Resource Type and Resource Language are editable
         and changes can be cancelled without saving.
         """
         new_title = fake.sentence(nb_words=1)
-        orig_title = file_metadata_page_with_data.files_metadata_title.text
+        orig_title = file_metadata_page.files_metadata_title.text
         assert orig_title != new_title
         WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable(
@@ -300,18 +243,18 @@ class TestFilesMetadata:
             )
         ).click()
 
-        file_metadata_page_with_data.edit_title.click()
+        file_metadata_page.edit_title.click()
         title_input = driver.find_element_by_css_selector(
             '[data-test-title-field] textarea'
         )
         title_input.clear()
         title_input.send_keys(new_title)
-        file_metadata_page_with_data.cancel_editing_button.click()
-        assert new_title != file_metadata_page_with_data.files_metadata_title.text
+        file_metadata_page.cancel_editing_button.click()
+        assert new_title != file_metadata_page.files_metadata_title.text
         file_metadata_tab = utils.switch_to_new_tab(driver)
         utils.close_current_tab(driver, file_metadata_tab)
 
-    def test_download_file_metadata(self, driver, file_metadata_page_with_data):
+    def test_download_file_metadata(self, driver, file_metadata_page):
         """This test verifies download functinality."""
         try:
             WebDriverWait(driver, 5).until(
@@ -323,7 +266,7 @@ class TestFilesMetadata:
             if '404' in driver.page_source:
                 raise Exception
             else:
-                file_metadata_page_with_data.reload()
+                file_metadata_page.reload()
                 FilesMetadataPage(driver, verify=True)
 
                 # Verify File Download Functionality
@@ -512,19 +455,16 @@ class TestProjectMetadata:
         funder_info = osf_api.get_funder_data_project(
             session, project_guid=default_project_with_metadata.id
         )
-        if funder_info is None:
-            WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
-            ).click()
-        else:
+        if funder_info is not None:
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable(
                     (By.XPATH, '//button[text()="Delete funder"]')
                 )
             ).click()
-            WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
-            ).click()
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
+        ).click()
 
         project_metadata_page.funder_name.click()
 
@@ -565,14 +505,11 @@ class TestProjectMetadata:
 @markers.core_functionality
 class TestRegistrationMetadata:
     @pytest.fixture()
-    def registration_metadata_page(self, driver, session):
-
+    def registration_metadata_page(self, driver):
         registration_guid = osf_api.get_registration_by_title(
             'Selenium%20Registration%20for%20Metadata%20tests'
         )
-        osf_api.update_registration_metadata_with_custom_data(
-            registration_id=registration_guid
-        )
+        osf_api.update_registration_metadata_with_custom_data(registration_guid)
         registration_metadata_page = RegistrationMetadataPage(
             driver, guid=registration_guid
         )
@@ -660,19 +597,16 @@ class TestRegistrationMetadata:
             'Selenium%20Registration%20for%20Metadata%20tests'
         )
         funder_info = osf_api.get_funder_data_registration(registration_guid)
-        if funder_info is None:
-            WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
-            ).click()
-        else:
+        if funder_info is not None:
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable(
                     (By.XPATH, '//button[text()="Delete funder"]')
                 )
             ).click()
-            WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
-            ).click()
+
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, '//button[text()="Add funder"]'))
+        ).click()
 
         registration_metadata_page.funder_name.click()
 
