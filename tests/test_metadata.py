@@ -106,9 +106,10 @@ def get_funder_information(funder_name):
                 funder['attributes']['resourceMetadata']['name'][0]['@value']
                 == funder_name
             ):
-                award_title = funder['attributes']['resourceMetadata']['resourceType'][
-                    0
-                ]['@id']
+
+                award_title = funder['attributes']['resourceMetadata']['rdf:type'][0][
+                    '@id'
+                ]
                 award_uri = funder['attributes']['resourceIdentifier'][0]
                 award_number = funder['id']
 
