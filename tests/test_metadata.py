@@ -233,7 +233,7 @@ class TestFilesMetadata:
     def test_cancel_file_metadata_changes(self, driver, file_metadata_page, fake):
         """This test verifies the file metadata fields
         title, Description, Resource Type and Resource Language are editable
-        and changes can be cancelled without saving.
+        and changes are cancelled without saving.
         """
         new_title = fake.sentence(nb_words=1)
         orig_title = file_metadata_page.files_metadata_title.text
@@ -255,8 +255,13 @@ class TestFilesMetadata:
         file_metadata_tab = utils.switch_to_new_tab(driver)
         utils.close_current_tab(driver, file_metadata_tab)
 
+    @pytest.mark.skipif(
+        settings.env('TEST_BUILD') == 'edge',
+        reason='Test fails on remote edge browser because of download popup window',
+    )
     def test_download_file_metadata(self, driver, file_metadata_page):
-        """This test verifies download functinality."""
+        """This test verifies download functionality for file metadata."""
+
         try:
             WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable(
