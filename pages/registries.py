@@ -97,6 +97,44 @@ class RegistrationDetailPage(BaseSubmittedRegistrationPage):
     associated_project_link = Locator(
         By.CSS_SELECTOR, 'a[data-analytics-name="Registered from"]'
     )
+    open_practice_resource_data = Locator(By.CSS_SELECTOR, '[data-test-resource-link]')
+    add_resource_button = Locator(By.CSS_SELECTOR, 'button[aria-label="Add resource"]')
+    doi_input_field = Locator(By.XPATH, '//input[@name="pid"]')
+    resource_type_dropdown = Locator(
+        By.CSS_SELECTOR, '[data-test-power-select-dropdown]'
+    )
+    data_icon = Locator(By.CSS_SELECTOR, 'img[data-analytics-name="data"]')
+    dropdown_options = GroupLocator(
+        By.CSS_SELECTOR,
+        '#ember-basic-dropdown-wormhole > div > ul > li>span',
+    )
+
+    def select_from_dropdown_listbox(self, selection):
+        for option in self.dropdown_options:
+            if option.text == selection:
+                option.click()
+                break
+
+    preview_button = Locator(By.CSS_SELECTOR, '[data-test-preview-button]')
+    resource_type_add_button = Locator(By.CSS_SELECTOR, '[data-test-add-button]')
+    resouce_type = Locator(By.CSS_SELECTOR, '[data-test-resource-card-type]')
+    resouce_type_link = Locator(By.CSS_SELECTOR, '[data-test-resource-card-pid-link]')
+    resource_type_delete_button = Locator(
+        By.CSS_SELECTOR, 'button[aria-label="Delete resource"]'
+    )
+    resource_type_delete_confirm = Locator(
+        By.CSS_SELECTOR, '[data-test-confirm-delete]'
+    )
+    resource_type_edit_button = Locator(
+        By.CSS_SELECTOR, 'button[aria-label="Edit resource"]'
+    )
+    resource_description = Locator(
+        By.XPATH, '//textarea[@class="ember-text-area ember-view form-control"]'
+    )
+    save_button = Locator(By.CSS_SELECTOR, '[data-test-save-button]')
+    resource_card_description = Locator(
+        By.CSS_SELECTOR, '[data-test-resource-card-description]'
+    )
 
 
 class RegistrationMetadataPage(BaseSubmittedRegistrationPage):
