@@ -1,7 +1,8 @@
+import datetime
 import json
 import logging
 import os
-from datetime import datetime
+from urllib.parse import quote
 
 import requests
 from pythosf import client
@@ -1165,8 +1166,8 @@ def get_registration_by_title(encoded_registration_title):
         api_base_url=settings.API_DOMAIN,
         auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
     )
-
-    url = '/v2/registrations/?filter[title] =' + encoded_registration_title
+    registration_title = quote(encoded_registration_title)
+    url = '/v2/registrations/?filter[title] =' + registration_title
     data = session.get(url)['data']
     if data:
         return data[0]['id']
@@ -1196,3 +1197,82 @@ def update_file_metadata(session, file_guid):
         item_type='registrations',
         item_id=file_guid,
     )
+
+
+def create_registration_resource(registration_guid, resource_type):
+    """This method creates new registration output resource for a given
+    registration."""
+
+    session = client.Session(
+        api_base_url=settings.API_DOMAIN,
+        auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
+    )
+
+    url = '/v2/resources/'
+    raw_payload = {
+        'data': {
+            'relationships': {
+                'registration': {
+                    'data': {'type': 'registrations', 'id': registration_guid}
+                }
+            },
+            'type': 'resources',
+        }
+    }
+
+    response = session.post(url=url, raw_body=json.dumps(raw_payload))['data']
+
+    resource_id = response['id']
+    resource_url = 'v2/resources/{}/'.format(resource_id)
+
+    resource_payload = {
+        'data': {
+            'id': resource_id,
+            'attributes': {
+                'pid': '10.17605',
+                'resource_type': resource_type,
+                'finalized': True,
+            },
+            'type': 'resources',
+        }
+    }
+
+    session.patch(
+        url=resource_url,
+        raw_body=json.dumps(resource_payload),
+        item_id=resource_id,
+        item_type='resources',
+    )['data']
+
+
+def get_registration_resource_id(registration_id):
+    """This function returns the most recent resource id
+    added to the given registration"""
+    session = client.Session(
+        api_base_url=settings.API_DOMAIN,
+        auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
+    )
+
+    url = '/v2/registrations/{}/resources/'.format(registration_id)
+    data = session.get(url)['data']
+    if data:
+        for i in range(0, len(data)):
+            date_created = data[i]['attributes']['date_created']
+            now = datetime.datetime.now()
+            current_date = now.strftime('%Y-%m-%d')
+            if current_date in date_created:
+                return data[i]['id']
+                break
+    return None
+
+
+def delete_registration_resource(registration_id):
+    """This function deletes the resource added to the given registration"""
+    session = client.Session(
+        api_base_url=settings.API_DOMAIN,
+        auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
+    )
+    registration_resource_id = get_registration_resource_id(registration_id)
+    url = '/v2/resources/{}'.format(registration_resource_id)
+
+    session.delete(url, item_type='resources')
