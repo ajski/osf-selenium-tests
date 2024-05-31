@@ -1159,15 +1159,13 @@ def get_funder_data_registration(registration_guid):
 
 
 def get_registration_by_title(encoded_registration_title):
-    """Return the registration node id having the title as given in encoded_registration_title
-    ToDo: Handle URL encoding in python
-    """
+    """Return the registration node id having the title as given in encoded_registration_title"""
     session = client.Session(
         api_base_url=settings.API_DOMAIN,
         auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
     )
     registration_title = quote(encoded_registration_title)
-    url = '/v2/registrations/?filter[title] =' + registration_title
+    url = '/v2/registrations/?filter[title]=' + registration_title
     data = session.get(url)['data']
     if data:
         return data[0]['id']
