@@ -107,9 +107,9 @@ def get_funder_information(funder_name):
                 == funder_name
             ):
 
-                award_title = funder['attributes']['resourceMetadata']['rdf:type'][0][
-                    '@id'
-                ]
+                award_title = funder['attributes']['resourceMetadata']['resourceType'][
+                    0
+                ]['@id']
                 award_uri = funder['attributes']['resourceIdentifier'][0]
                 award_number = funder['id']
 
@@ -600,7 +600,7 @@ class TestRegistrationMetadata:
             )
         ).click()
         registration_guid = osf_api.get_registration_by_title(
-            'Selenium%20Registration%20for%20Metadata%20tests'
+            'Selenium Registration for Metadata tests'
         )
         funder_info = osf_api.get_funder_data_registration(registration_guid)
         if funder_info is not None:
