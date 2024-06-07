@@ -513,7 +513,7 @@ class TestRegistrationMetadata:
     @pytest.fixture()
     def registration_metadata_page(self, driver):
         registration_guid = osf_api.get_registration_by_title(
-            'Selenium%20Registration%20for%20Metadata%20tests'
+            'Selenium Registration for Metadata tests'
         )
         osf_api.update_registration_metadata_with_custom_data(registration_guid)
         registration_metadata_page = RegistrationMetadataPage(
