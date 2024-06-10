@@ -100,6 +100,9 @@ class RegistrationDetailPage(BaseSubmittedRegistrationPage):
     open_practice_resource_data = Locator(By.CSS_SELECTOR, '[data-test-resource-link]')
     add_resource_button = Locator(By.CSS_SELECTOR, 'button[aria-label="Add resource"]')
     doi_input_field = Locator(By.XPATH, '//input[@name="pid"]')
+    resource_list = Locator(
+        By.XPATH, '//li[text()="This registration has no resources."]'
+    )
     resource_type_dropdown = Locator(
         By.CSS_SELECTOR, '[data-test-power-select-dropdown]'
     )

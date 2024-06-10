@@ -97,8 +97,17 @@ class TestRegistrationOutputs:
         registration_details_page.goto()
         return registration_details_page
 
+    @pytest.fixture()
+    def registration_details_page_with_resource(self, driver, registration_guid):
+        registration_details_page = RegistrationDetailPage(
+            driver, guid=registration_guid
+        )
+        osf_api.create_registration_resource(registration_guid, resource_type='Data')
+        registration_details_page.goto()
+        return registration_details_page
+
     def create_new_resource(
-        self, driver, registration_guid, registration_details_page, resource_type
+        self, registration_guid, registration_details_page, resource_type
     ):
         """This method creates new resource of the type given for the given registration"""
         doi = '10.17605'
@@ -138,9 +147,7 @@ class TestRegistrationOutputs:
                 )
             )
 
-        self.create_new_resource(
-            self, driver, registration_details_page, resource_type='Data'
-        )
+        self.create_new_resource(self, registration_details_page, resource_type='Data')
 
         data_resource = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.XPATH, '//li/p[text()="Data"]'))
@@ -149,78 +156,43 @@ class TestRegistrationOutputs:
         osf_api.delete_registration_resource(registration_guid)
 
     def test_edit_resource_data(
-        self, driver, registration_details_page, registration_guid, fake
+        self, driver, registration_details_page_with_resource, registration_guid, fake
     ):
         """This test updates the description of data output resource for a given registration"""
         resource_description = fake.sentence(nb_words=1)
-        registration_details_page.open_practice_resource_data.click()
-        # Verify n and delete the resource if already exists
-        resource_id = osf_api.get_registration_resource_id(
-            registration_id=registration_guid
-        )
-        if resource_id is not None:
-            osf_api.delete_registration_resource(registration_guid)
-            registration_details_page.reload()
-            WebDriverWait(driver, 10).until(
-                EC.invisibility_of_element_located((By.XPATH, '//li/p[text()="Data"]'))
-            )
+        registration_details_page_with_resource.open_practice_resource_data.click()
 
-        osf_api.create_registration_resource(registration_guid, resource_type='Data')
-        registration_details_page.reload()
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, '//li/p[text()="Data"]'))
+        registration_details_page_with_resource.resource_type_edit_button.click()
+        registration_details_page_with_resource.resource_description.click()
+        registration_details_page_with_resource.resource_description.clear()
+        registration_details_page_with_resource.resource_description.send_keys(
+            resource_description
         )
-        registration_details_page.resource_type_edit_button.click()
-        registration_details_page.resource_description.click()
-        registration_details_page.resource_description.clear()
-        registration_details_page.resource_description.send_keys(resource_description)
-        registration_details_page.save_button.click()
-
-        registration_details_page.reload()
-        WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.XPATH, '//li/p[text()="Data"]'))
-        )
+        registration_details_page_with_resource.save_button.click()
         assert (
-            registration_details_page.resource_card_description.text
+            registration_details_page_with_resource.resource_card_description.text
             == resource_description
         )
         osf_api.delete_registration_resource(registration_guid)
 
     def test_delete_resource_data(
-        self, driver, registration_details_page, registration_guid, fake
+        self, driver, registration_details_page_with_resource, registration_guid, fake
     ):
         """This test verifies delete functionality of data output resource for a registration"""
 
-        registration_details_page.open_practice_resource_data.click()
-        # Verify and delete the resource if already exists
-        resource_id = osf_api.get_registration_resource_id(
-            registration_id=registration_guid
-        )
-        if resource_id is not None:
-            osf_api.delete_registration_resource(registration_guid)
-            registration_details_page.reload()
-            WebDriverWait(driver, 10).until(
-                EC.invisibility_of_element_located((By.XPATH, '//li/p[text()="Data"]'))
-            )
+        registration_details_page_with_resource.open_practice_resource_data.click()
 
-        osf_api.create_registration_resource(registration_guid, resource_type='Data')
-        registration_details_page.reload()
-        WebDriverWait(driver, 5).until(
-            EC.visibility_of_element_located((By.XPATH, '//li/p[text()="Data"]'))
-        )
+        registration_details_page_with_resource.resource_type_delete_button.click()
+        registration_details_page_with_resource.resource_type_delete_confirm.click()
 
-        orig_data_icon_color = driver.find_element_by_css_selector(
-            'img[data-analytics-name="data"]'
-        ).get_attribute('src')
-        registration_details_page.resource_type_delete_button.click()
-        registration_details_page.resource_type_delete_confirm.click()
-        registration_details_page.reload()
+        registration_details_page_with_resource.reload()
         WebDriverWait(driver, 10).until(
             EC.visibility_of_element_located(
                 (By.CSS_SELECTOR, '[data-test-add-resource-section]')
             )
         )
-        new_data_icon_color = driver.find_element_by_css_selector(
-            'img[data-analytics-name="data"]'
-        ).get_attribute('src')
-        assert new_data_icon_color != orig_data_icon_color
+
+        assert (
+            registration_details_page_with_resource.resource_list.text
+            == 'This registration has no resources.'
+        )
