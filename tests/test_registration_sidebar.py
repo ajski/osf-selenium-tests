@@ -97,8 +97,6 @@ class TestRegistrationOutputs:
         registration_details_page.goto()
         return registration_details_page
 
-    resource_type = ['Data', 'Analytic Code', 'Materials', 'Papers', 'Supplements']
-
     @pytest.fixture()
     def registration_details_page_with_resource(
         self, driver, registration_guid, resource_type
@@ -127,7 +125,9 @@ class TestRegistrationOutputs:
         registration_details_page.preview_button.click()
         registration_details_page.resource_type_add_button.click()
 
-    @pytest.mark.parametrize('resource_type', resource_type)
+    resource_types = ['Data', 'Analytic Code', 'Materials', 'Papers', 'Supplements']
+
+    @pytest.mark.parametrize('resource_type', resource_types)
     def test_add_new_resource(
         self, driver, registration_details_page, registration_guid, resource_type
     ):
@@ -163,7 +163,7 @@ class TestRegistrationOutputs:
         assert data_resource is not None
         osf_api.delete_registration_resource(registration_guid)
 
-    @pytest.mark.parametrize('resource_type', resource_type)
+    @pytest.mark.parametrize('resource_type', resource_types)
     def test_edit_resource(
         self,
         driver,
@@ -189,7 +189,7 @@ class TestRegistrationOutputs:
         )
         osf_api.delete_registration_resource(registration_guid)
 
-    @pytest.mark.parametrize('resource_type', resource_type)
+    @pytest.mark.parametrize('resource_type', resource_types)
     def test_delete_resource(
         self,
         driver,
