@@ -1,5 +1,6 @@
 import urllib.parse
 from time import sleep
+from urllib.parse import quote
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
@@ -38,7 +39,10 @@ class BasePage(BaseElement):
         self.driver.get(self.url)
 
         if expect_redirect_to:
-            if self.url not in self.driver.current_url:
+            if (
+                self.url not in self.driver.current_url
+                and quote(self.url, safe='') not in self.driver.current_url
+            ):
                 raise PageException(
                     'Unexpected url structure: `{}`'.format(self.driver.current_url)
                 )
