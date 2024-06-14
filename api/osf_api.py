@@ -1,7 +1,7 @@
-import datetime
 import json
 import logging
 import os
+from datetime import datetime
 from urllib.parse import quote
 
 import requests
@@ -1210,7 +1210,7 @@ def get_registration_resource_id(registration_id):
     if data:
         for i in range(0, len(data)):
             date_created = data[i]['attributes']['date_created']
-            now = datetime.datetime.now()
+            now = datetime.now()
             current_date = now.strftime('%Y-%m-%d')
             if current_date in date_created:
                 return data[i]['id']

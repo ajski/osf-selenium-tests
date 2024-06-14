@@ -579,7 +579,8 @@ class TestPreprintModeration:
         preprint_page.goto()
         assert PreprintDetailPage(driver, verify=True)
         WebDriverWait(driver, 5).until(EC.visibility_of(preprint_page.title))
-        assert preprint_page.title.text == preprint_title
+        assert preprint_title in preprint_page.title.text
+        assert 'Withdrawn' in preprint_page.title.text
         # TODO: Re-enable assert after [ENG-5092] is fixed.
         # assert (
         #         preprint_page.status_explanation.text == 'This preprint has been withdrawn.'
@@ -846,7 +847,8 @@ class TestPreprintModeration:
         preprint_page.goto()
         assert PreprintDetailPage(driver, verify=True)
         WebDriverWait(driver, 5).until(EC.visibility_of(preprint_page.title))
-        assert preprint_page.title.text == preprint_title
+        assert preprint_title in preprint_page.title.text
+        assert 'Withdrawn' in preprint_page.title.text
         # TODO: Re-enable assert after [ENG-5092] is fixed.
         # assert (
         #         preprint_page.status_explanation.text == 'This preprint has been withdrawn.'
@@ -943,7 +945,8 @@ class TestPreprintModeration:
         preprint_page.goto()
         assert PreprintDetailPage(driver, verify=True)
         WebDriverWait(driver, 5).until(EC.visibility_of(preprint_page.title))
-        assert preprint_page.title.text == preprint_title
+        assert preprint_title in preprint_page.title.text
+        assert 'Withdrawn' in preprint_page.title.text
         # Add assert for "This preprint has been withdrawn" after [ENG-5092] is fixed.
         assert preprint_page.withdraw_reason.present()
 
