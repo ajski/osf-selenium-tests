@@ -139,7 +139,7 @@ class TestRegistrationOutputs:
                 (By.CSS_SELECTOR, '[data-test-add-resource-section]')
             )
         )
-        # Verify if resource already exists and delete the resource if already exists
+        # Verify and delete the resource if already exists
         resource_id = osf_api.get_registration_resource_id(
             registration_id=registration_guid
         )
