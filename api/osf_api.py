@@ -1,7 +1,7 @@
-import datetime
 import json
 import logging
 import os
+from datetime import datetime
 from urllib.parse import quote
 
 import requests
@@ -643,7 +643,7 @@ def create_preprint(
     # then the Edit Preprint page thinks that the preprint has unsaved changes even if
     # you have made no changes on the form page. There is a ticket for this issue:
     # ENG-3782.
-    current_year = datetime.datetime.now().year
+    current_year = datetime.now().year
     # Get subject id for the subject_name parameter. NOTE: Currently we are creating
     # the preprint with only a single subject, which is the minimum required to publish.
     subject_id = get_subject_id_for_provider(
@@ -1210,7 +1210,7 @@ def get_registration_resource_id(registration_id):
     if data:
         for i in range(0, len(data)):
             date_created = data[i]['attributes']['date_created']
-            now = datetime.datetime.now()
+            now = datetime.now()
             current_date = now.strftime('%Y-%m-%d')
             if current_date in date_created:
                 return data[i]['id']
