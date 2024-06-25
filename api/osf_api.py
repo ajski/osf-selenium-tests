@@ -643,7 +643,7 @@ def create_preprint(
     # then the Edit Preprint page thinks that the preprint has unsaved changes even if
     # you have made no changes on the form page. There is a ticket for this issue:
     # ENG-3782.
-    current_year = datetime.datetime.now().year
+    current_year = datetime.now().year
     # Get subject id for the subject_name parameter. NOTE: Currently we are creating
     # the preprint with only a single subject, which is the minimum required to publish.
     subject_id = get_subject_id_for_provider(
