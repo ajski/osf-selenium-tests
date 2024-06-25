@@ -643,7 +643,7 @@ def create_preprint(
     # then the Edit Preprint page thinks that the preprint has unsaved changes even if
     # you have made no changes on the form page. There is a ticket for this issue:
     # ENG-3782.
-    current_year = datetime.now().year
+    current_year = datetime.datetime.now().year
     # Get subject id for the subject_name parameter. NOTE: Currently we are creating
     # the preprint with only a single subject, which is the minimum required to publish.
     subject_id = get_subject_id_for_provider(
@@ -1197,52 +1197,6 @@ def update_file_metadata(session, file_guid):
     )
 
 
-def create_registration_resource(registration_guid, resource_type):
-    """This method creates new registration output resource for a given
-    registration."""
-
-    session = client.Session(
-        api_base_url=settings.API_DOMAIN,
-        auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
-    )
-
-    url = '/v2/resources/'
-    raw_payload = {
-        'data': {
-            'relationships': {
-                'registration': {
-                    'data': {'type': 'registrations', 'id': registration_guid}
-                }
-            },
-            'type': 'resources',
-        }
-    }
-
-    response = session.post(url=url, raw_body=json.dumps(raw_payload))['data']
-
-    resource_id = response['id']
-    resource_url = 'v2/resources/{}/'.format(resource_id)
-
-    resource_payload = {
-        'data': {
-            'id': resource_id,
-            'attributes': {
-                'pid': '10.17605',
-                'resource_type': resource_type,
-                'finalized': True,
-            },
-            'type': 'resources',
-        }
-    }
-
-    session.patch(
-        url=resource_url,
-        raw_body=json.dumps(resource_payload),
-        item_id=resource_id,
-        item_type='resources',
-    )['data']
-
-
 def get_registration_resource_id(registration_id):
     """This function returns the most recent resource id
     added to the given registration"""
@@ -1274,3 +1228,54 @@ def delete_registration_resource(registration_id):
     url = '/v2/resources/{}'.format(registration_resource_id)
 
     session.delete(url, item_type='resources')
+
+
+def create_registration_resource(registration_guid, resource_type):
+    """This method creates new registration output resource for a given
+    registration."""
+
+    session = client.Session(
+        api_base_url=settings.API_DOMAIN,
+        auth=(settings.REGISTRATIONS_USER, settings.REGISTRATIONS_USER_PASSWORD),
+    )
+    resource_id = get_registration_resource_id(registration_guid)
+    if resource_id is not None:
+        delete_registration_resource(registration_guid)
+
+    url = '/v2/resources/'
+    raw_payload = {
+        'data': {
+            'relationships': {
+                'registration': {
+                    'data': {'type': 'registrations', 'id': registration_guid}
+                }
+            },
+            'type': 'resources',
+        }
+    }
+    if resource_type == 'Analytic Code':
+        resource_type = 'analytic_code'
+
+    response = session.post(url=url, raw_body=json.dumps(raw_payload))['data']
+
+    resource_id = response['id']
+    resource_url = 'v2/resources/{}/'.format(resource_id)
+
+    resource_payload = {
+        'data': {
+            'id': resource_id,
+            'attributes': {
+                'pid': '10.17605',
+                'resource_type': resource_type,
+                'finalized': True,
+            },
+            'type': 'resources',
+        }
+    }
+
+    session.patch(
+        url=resource_url,
+        raw_body=json.dumps(resource_payload),
+        item_id=resource_id,
+        item_type='resources',
+    )['data']

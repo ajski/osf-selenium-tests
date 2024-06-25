@@ -98,11 +98,13 @@ class TestRegistrationOutputs:
         return registration_details_page
 
     @pytest.fixture()
-    def registration_details_page_with_resource(self, driver, registration_guid):
+    def registration_details_page_with_resource(
+        self, driver, registration_guid, resource_type
+    ):
         registration_details_page = RegistrationDetailPage(
             driver, guid=registration_guid
         )
-        osf_api.create_registration_resource(registration_guid, resource_type='Data')
+        osf_api.create_registration_resource(registration_guid, resource_type)
         registration_details_page.goto()
         return registration_details_page
 
@@ -116,15 +118,17 @@ class TestRegistrationOutputs:
         registration_details_page.doi_input_field.click()
         registration_details_page.doi_input_field.send_keys(doi)
 
-        # Select 'Data' from the resource type listbox
+        # Select given 'resource_type' from the resource type listbox
         registration_details_page.resource_type_dropdown.click()
 
         registration_details_page.select_from_dropdown_listbox(resource_type)
         registration_details_page.preview_button.click()
         registration_details_page.resource_type_add_button.click()
 
-    def test_add_new_resource_data(
-        self, driver, registration_details_page, registration_guid
+    resource_types = ['Data', 'Analytic Code', 'Materials', 'Papers', 'Supplements']
+    @pytest.mark.parametrize('resource_type', resource_types)
+    def test_add_new_resource(
+        self, driver, registration_details_page, registration_guid, resource_type
     ):
         """This test verifies adding new Data output resource for a registration
         and verifies that the Data icon color changes when resource is added"""
@@ -134,7 +138,7 @@ class TestRegistrationOutputs:
                 (By.CSS_SELECTOR, '[data-test-add-resource-section]')
             )
         )
-        # Verify if resource already exists and delete the resource if already exists
+        # Verify and delete the resource if already exists
         resource_id = osf_api.get_registration_resource_id(
             registration_id=registration_guid
         )
@@ -146,17 +150,26 @@ class TestRegistrationOutputs:
                     (By.CSS_SELECTOR, '[data-test-resource-card-type]')
                 )
             )
-
-        self.create_new_resource(self, registration_details_page, resource_type='Data')
+        self.create_new_resource(
+            self, registration_details_page, resource_type=resource_type
+        )
 
         data_resource = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, '//li/p[text()="Data"]'))
+            EC.presence_of_element_located(
+                (By.XPATH, f'//li/p[text()="{resource_type}"]')
+            )
         )
         assert data_resource is not None
         osf_api.delete_registration_resource(registration_guid)
 
-    def test_edit_resource_data(
-        self, driver, registration_details_page_with_resource, registration_guid, fake
+    @pytest.mark.parametrize('resource_type', resource_types)
+    def test_edit_resource(
+        self,
+        driver,
+        registration_details_page_with_resource,
+        registration_guid,
+        resource_type,
+        fake,
     ):
         """This test updates the description of data output resource for a given registration"""
         resource_description = fake.sentence(nb_words=1)
@@ -175,8 +188,14 @@ class TestRegistrationOutputs:
         )
         osf_api.delete_registration_resource(registration_guid)
 
-    def test_delete_resource_data(
-        self, driver, registration_details_page_with_resource, registration_guid, fake
+    @pytest.mark.parametrize('resource_type', resource_types)
+    def test_delete_resource(
+        self,
+        driver,
+        registration_details_page_with_resource,
+        registration_guid,
+        resource_type,
+        fake,
     ):
         """This test verifies delete functionality of data output resource for a registration"""
 
