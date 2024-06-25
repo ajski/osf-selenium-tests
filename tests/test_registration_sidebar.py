@@ -126,7 +126,6 @@ class TestRegistrationOutputs:
         registration_details_page.resource_type_add_button.click()
 
     resource_types = ['Data', 'Analytic Code', 'Materials', 'Papers', 'Supplements']
-
     @pytest.mark.parametrize('resource_type', resource_types)
     def test_add_new_resource(
         self, driver, registration_details_page, registration_guid, resource_type
