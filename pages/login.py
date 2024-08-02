@@ -102,8 +102,14 @@ class GenericInstitutionEmailLoginPage(BasePage):
 class GenericInstitutionUsernameLoginPage(BasePage):
     # This is for institution login pages that first ask for a Username or User ID to
     # initiate the login process before asking for a password. The page has a form
-    # element and a usenrname or user id text input box.
+    # element and a username or user id text input box.
     identity = Locator(By.CSS_SELECTOR, 'form[method="post"]')
+
+
+class GenericInstitutionIDLoginPage(BasePage):
+    # This is for institution login pages that first ask for a User ID to
+    # initiate the login process before asking for a password.
+    identity = Locator(By.CSS_SELECTOR, 'input[autocomplete="username"]')
 
 
 class ForgotPasswordPage(BasePage):

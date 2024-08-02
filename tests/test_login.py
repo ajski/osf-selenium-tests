@@ -15,6 +15,7 @@ from pages.login import (
     ForgotPasswordPage,
     GenericCASPage,
     GenericInstitutionEmailLoginPage,
+    GenericInstitutionIDLoginPage,
     GenericInstitutionLoginPage,
     GenericInstitutionUsernameLoginPage,
     InstitutionalLoginPage,
@@ -330,6 +331,17 @@ class TestCustomExceptionPages:
         assert exception_page.status_message.text == 'Account disabled'
 
 
+def try_login_page(driver, page_class):
+    """
+    Helper function to try and verify a login page.
+    Returns True if successful, otherwise False.
+    """
+    try:
+        return page_class(driver, verify=True)
+    except (PageException, NoSuchElementException):
+        return False
+
+
 @markers.smoke_test
 @markers.core_functionality
 class TestInstitutionLoginPage:
@@ -415,40 +427,51 @@ class TestInstitutionLoginPage:
         not have working testing environments.
         """
         failed_list = []
+
         for institution in institution_list:
-            if institution != '-- select an institution --':
-                institution_select = Select(institution_login_page.institution_dropdown)
-                institution_select.select_by_visible_text(institution)
-                institution_login_page.sign_in_button.click()
-                try:
-                    # Verify that we get to a valid login page by checking for a
-                    # password input field
-                    assert GenericInstitutionLoginPage(driver, verify=True)
-                except PageException:
-                    try:
-                        # For a small number of institutions the initial login page
-                        # first asks for just an email without the passord field.
-                        assert GenericInstitutionEmailLoginPage(driver, verify=True)
-                    except PageException:
-                        try:
-                            # A few institutions use a login page with a generic username
-                            # or user id text input field. The page definition checks for
-                            # a form element with methdo="post". Then check that the page
-                            # also has an input box.
-                            assert GenericInstitutionUsernameLoginPage(
-                                driver, verify=True
-                            )
-                            driver.find_element(By.CSS_SELECTOR, 'input[type="text"]')
-                        except (PageException, NoSuchElementException):
-                            # if there is a failure add the name of the institution to the
-                            # failed list
-                            failed_list.append(institution)
-                # Need to go back to the original OSF Institution Login page
-                institution_login_page.goto()
-        # If there are any failed institutions then fail the test and print the list
-        assert len(failed_list) == 0, 'The following Institutions Failed: ' + str(
-            failed_list
-        )
+            # This value represents a placeholder or default option in the dropdown list,
+            # which isn't a valid institution for testing. Avoid wrapping the rest of the loop's logic
+            # in an additional if statement by using an early continue
+            if institution == '-- select an institution --':
+                continue
+
+            # Select institution and click sign in
+            Select(institution_login_page.institution_dropdown).select_by_visible_text(
+                institution
+            )
+            institution_login_page.sign_in_button.click()
+
+            success = False
+            page_classes = [
+                GenericInstitutionLoginPage,
+                GenericInstitutionEmailLoginPage,
+                GenericInstitutionUsernameLoginPage,
+                GenericInstitutionIDLoginPage,
+            ]
+
+            # GILoginPage - Verify that we get to a valid login page by checking for a
+            # password input field
+            # GIEmailLoginPage - For a small number of institutions the initial login page
+            # first asks for just an email without the password field.
+            # GIUsernameLoginPage - A few institutions use a login page with a generic username
+            # or user id text input field. The page definition checks for
+            # a form element with method="post".
+            # GIIDLoginPage - Check for institutions that use Okta for sign in
+            for page_class in page_classes:
+                retval = try_login_page(driver, page_class)
+                if retval:
+                    success = True
+                    break
+            if not success:
+                failed_list.append(institution)
+
+            # Return to the original OSF Institution Login page
+            institution_login_page.goto()
+
+        # Fail the test if there are any failed institutions and print the list
+        assert (
+            len(failed_list) == 0
+        ), f'The following Institutions Failed: {failed_list}'
 
 
 @markers.dont_run_on_prod
