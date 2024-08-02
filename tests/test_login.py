@@ -456,7 +456,7 @@ class TestInstitutionLoginPage:
             # GIUsernameLoginPage - A few institutions use a login page with a generic username
             # or user id text input field. The page definition checks for
             # a form element with method="post".
-            # GIDLoginPage - Check for institutions that use OKTA for sign in
+            # GIIDLoginPage - Check for institutions that use Okta for sign in
             for page_class in page_classes:
                 retval = try_login_page(driver, page_class)
                 if retval:
