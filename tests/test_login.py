@@ -443,28 +443,27 @@ class TestInstitutionLoginPage:
 
             success = False
             page_classes = [
+                GenericInstitutionLoginPage,
                 GenericInstitutionEmailLoginPage,
                 GenericInstitutionUsernameLoginPage,
                 GenericInstitutionIDLoginPage,
             ]
 
-            try:
-                # Verify that we get to a valid login page by checking for a
-                # password input field
-                assert GenericInstitutionLoginPage(driver, verify=True)
-            except PageException:
-                # For a small number of institutions the initial login page
-                # first asks for just an email without the password field.
-                # A few institutions use a login page with a generic username
-                # or user id text input field. The page definition checks for
-                # a form element with method="post".
-                for page_class in page_classes:
-                    retval = try_login_page(driver, page_class)
-                    if retval:
-                        success = True
-                        break
-                if not success:
-                    failed_list.append(institution)
+            # GILoginPage - Verify that we get to a valid login page by checking for a
+            # password input field
+            # GIEmailLoginPage - For a small number of institutions the initial login page
+            # first asks for just an email without the password field.
+            # GIUsernameLoginPage - A few institutions use a login page with a generic username
+            # or user id text input field. The page definition checks for
+            # a form element with method="post".
+            # GIDLoginPage - Check for institutions that use OKTA for sign in
+            for page_class in page_classes:
+                retval = try_login_page(driver, page_class)
+                if retval:
+                    success = True
+                    break
+            if not success:
+                failed_list.append(institution)
 
             # Return to the original OSF Institution Login page
             institution_login_page.goto()
