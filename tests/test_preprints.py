@@ -186,7 +186,7 @@ class TestPreprintWorkflow:
             submit_page.supplemental_project_create_button.click()
             submit_page.next_button.click()
             submit_page.create_preprint_button.click()
-            preprint_detail = PendingPreprintDetailPage(driver, verify=True)
+            preprint_detail = PreprintDetailPage(driver, verify=True)
             WebDriverWait(driver, 10).until(EC.visibility_of(preprint_detail.title))
             assert preprint_detail.title.text == 'Selenium Test Preprint'
             # Capture guid of supplemental materials project created during workflow
@@ -299,7 +299,7 @@ class TestPreprintWorkflow:
             EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-test-submit-button]'))
         )
         edit_page.submit_preprint_button.click()
-        detail_page = PendingPreprintDetailPage(driver, verify=True)
+        detail_page = PreprintDetailPage(driver, verify=True)
         # Verify Title and Abstract
         assert detail_page.title.text == 'Selenium Preprint Edit'
         assert detail_page.abstract.text == 'Testing Selenium Abstract edit'
