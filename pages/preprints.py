@@ -68,17 +68,14 @@ class PreprintLandingPage(BasePreprintPage):
 
 class PreprintSubmitPage(BasePreprintPage):
     url_addition = 'submit'
-
-    identity = Locator(By.CLASS_NAME, 'preprint-submit-header')
-    select_a_service_help_text = Locator(
-        By.CSS_SELECTOR, 'dl[class="dl-horizontal dl-description"]'
-    )
-    select_a_service_save_button = Locator(
-        By.CSS_SELECTOR, '#preprint-form-server button.btn.btn-primary'
-    )
-
+    identity = Locator(By.CSS_SELECTOR, '[div._header_1w5828]')
+    # Title and Abstract
+    preprint_title_input = Locator(By.CSS_SELECTOR, '[data-test-title-input] input')
+    abstract_input = Locator(By.CSS_SELECTOR, '[data-test-abstract-input] textarea')
+    next_button = Locator(By.CSS_SELECTOR, '[data-test-next-button]')
+    # File Upload
     upload_from_existing_project_button = Locator(
-        By.XPATH, '//button[text()="Select from an existing OSF project"]'
+        By.CSS_SELECTOR, '[data-test-select-button]'
     )
     upload_project_selector = Locator(
         By.CSS_SELECTOR, 'span[class="ember-power-select-placeholder"]'
@@ -92,66 +89,88 @@ class PreprintSubmitPage(BasePreprintPage):
     upload_project_selector_project = Locator(
         By.CSS_SELECTOR, '.ember-power-select-option'
     )
-    upload_select_file = Locator(By.CSS_SELECTOR, '.file-browser-item > a:nth-child(2)')
-    upload_file_save_continue = Locator(
+    upload_select_file = Locator(By.CSS_SELECTOR, '[data-test-file-name]')
+    # Metadata
+    basics_license_dropdown = Locator(
+        By.CSS_SELECTOR, '[data-test-power-select-dropdown]'
+    )
+    dropdown_options = GroupLocator(
         By.CSS_SELECTOR,
-        'div[class="p-t-xs pull-right"] > button[class="btn btn-primary"]',
+        '#ember-basic-dropdown-wormhole > div > ul >li.ember-power-select-option',
     )
 
-    # Author Assertions
+    def select_from_dropdown_listbox(self, selection):
+        for option in self.dropdown_options:
+            if option.text == selection:
+                option.click()
+                break
+
+    top_level_subjects = GroupLocator(
+        By.CSS_SELECTOR, 'div[data-analytics-scope="Browse"] > ul > li'
+    )
+    first_subject_second_level_subjects = GroupLocator(
+        By.CSS_SELECTOR, 'div[data-analytics-scope="Browse"] > ul > li > div > ul > li'
+    )
+
+    def select_top_level_subject(self, selection):
+        for subject in self.top_level_subjects:
+            if subject.text == selection:
+                # Find the checkbox element and click it to select the subject
+                checkbox = subject.find_element_by_css_selector(
+                    'input.ember-checkbox.ember-view'
+                )
+                checkbox.click()
+                break
+
+    first_selected_subject = Locator(By.CSS_SELECTOR, 'li[data-test-selected-subject]')
+    basics_tags_section = Locator(By.CSS_SELECTOR, '[data-test-no-tags]')
+    basics_tags_input = Locator(
+        By.CSS_SELECTOR, 'input[aria-label="Add a tag to enhance discoverability"]'
+    )
+    # Author Assertions Page
+    conflict_of_interest_yes = Locator(
+        By.CSS_SELECTOR, 'input[name="hasCoi"][type="radio"][value="true"]'
+    )
+    conflict_of_interest_no = Locator(
+        By.CSS_SELECTOR,
+        'input[name="hasCoi"][type="radio"][value="false"]',
+        settings.QUICK_TIMEOUT,
+    )
+    coi_text_box = Locator(
+        By.CSS_SELECTOR,
+        '[data-test-coi-description-input] textarea',
+        settings.QUICK_TIMEOUT,
+    )
     public_available_button = Locator(
-        By.ID, 'hasDataLinksAvailable', settings.QUICK_TIMEOUT
+        By.CSS_SELECTOR,
+        'input[name="hasDataLinks"][type="radio"][value="available"]',
+        settings.QUICK_TIMEOUT,
     )
-    public_data_input = Locator(
-        By.CSS_SELECTOR, '[data-test-multiple-textbox-index] > input'
+    public_data_input = Locator(By.CSS_SELECTOR, '[data-test-link-input] input')
+    preregistration_no_button = Locator(
+        By.CSS_SELECTOR, 'input[name="hasPreregLinks"][type="radio"][value="no"]'
     )
-    preregistration_no_button = Locator(By.ID, 'hasPreregLinksNo')
-    preregistration_input = Locator(By.NAME, 'whyNoPrereg')
+    preregistration_input = Locator(
+        By.CSS_SELECTOR, '[data-test-public-preregistration-description-input] textarea'
+    )
     save_author_assertions = Locator(
         By.CSS_SELECTOR, '[data-test-author-assertions-continue]'
     )
 
-    basics_license_dropdown = Locator(
-        By.CSS_SELECTOR, 'select[class="form-control"]', settings.LONG_TIMEOUT
-    )
-    basics_tags_section = Locator(By.CSS_SELECTOR, '#preprint-form-basics .tagsinput')
-    basics_tags_input = Locator(
-        By.CSS_SELECTOR, '#preprint-form-basics .tagsinput input'
-    )
-    basics_abstract_input = Locator(By.NAME, 'basicsAbstract')
-    basics_save_button = Locator(By.CSS_SELECTOR, '#preprint-form-basics .btn-primary')
-
-    first_discipline = Locator(
-        By.CSS_SELECTOR, 'ul[role="listbox"] > li:nth-child(2)', settings.QUICK_TIMEOUT
-    )
-    discipline_save_button = Locator(
-        By.CSS_SELECTOR, '#preprint-form-subjects .btn-primary'
-    )
-
-    authors_save_button = Locator(
-        By.CSS_SELECTOR, '#preprint-form-authors .btn-primary', settings.QUICK_TIMEOUT
-    )
-
-    conflict_of_interest_yes = Locator(By.ID, 'coiYes', settings.QUICK_TIMEOUT)
-    conflict_of_interest_no = Locator(By.ID, 'coiNo', settings.QUICK_TIMEOUT)
-    no_coi_text_box = Locator(
-        By.CSS_SELECTOR, '[data-test-has-no-coi]', settings.QUICK_TIMEOUT
-    )
-    coi_save_button = Locator(By.CSS_SELECTOR, '[data-test-coi-continue]')
-
+    # Supplements Page
     supplemental_create_new_project = Locator(
         By.CSS_SELECTOR,
-        'div[class="start"] > div[class="row"] > div:nth-child(2)',
+        'button[data-analytics-name="Create a new OSF preprint"]',
         settings.QUICK_TIMEOUT,
     )
-    supplemental_save_button = Locator(
-        By.CSS_SELECTOR, '#supplemental-materials .btn-primary'
+    supplemental_project_title = Locator(
+        By.CSS_SELECTOR, '[data-test-new-project-title]'
+    )
+    supplemental_project_create_button = Locator(
+        By.CSS_SELECTOR, '[data-test-create-project-submit]'
     )
 
-    create_preprint_button = Locator(
-        By.CSS_SELECTOR,
-        '.preprint-submit-body .submit-section > div > button.btn.btn-success.btn-md.m-t-md.pull-right',
-    )
+    create_preprint_button = Locator(By.CSS_SELECTOR, '[data-test-submit-button]')
     modal_create_preprint_button = Locator(
         By.CSS_SELECTOR,
         '.modal-footer button.btn-success:nth-child(2)',
@@ -162,35 +181,41 @@ class PreprintSubmitPage(BasePreprintPage):
 class PreprintEditPage(GuidBasePage, BasePreprintPage):
     url_base = urljoin(settings.OSF_HOME, '{guid}')
     url_addition = '/edit'
-
     identity = Locator(
-        By.CSS_SELECTOR, '.m-t-md.preprint-header-preview > p:nth-child(1) > em.m-r-md'
+        By.CSS_SELECTOR,
+        '[div#ember539.ember-view._header-container_1w5828.with-custom-branding]',
     )
-    basics_section = Locator(By.ID, 'preprint-form-basics')
-    basics_tags_section = Locator(By.CSS_SELECTOR, '#preprint-form-basics .tagsinput')
+    preprint_title_edit_input = Locator(
+        By.CSS_SELECTOR, '[data-test-title-input] input'
+    )
+    abstract_edit_input = Locator(
+        By.CSS_SELECTOR, '[data-test-abstract-input] textarea'
+    )
+    next_button = Locator(By.CSS_SELECTOR, '[data-test-next-button]')
+    basics_tags_section = Locator(By.CSS_SELECTOR, '[data-test-tags-widget-tag-input]')
     basics_tags_input = Locator(
-        By.CSS_SELECTOR, '#preprint-form-basics .tagsinput input'
+        By.CSS_SELECTOR, 'input[aria-label="Add a tag to enhance discoverability"]'
     )
-    basics_save_button = Locator(By.CSS_SELECTOR, '#preprint-form-basics .btn-primary')
-    basics_section_changes_saved_indicator = Locator(
-        By.CSS_SELECTOR,
-        '#preprint-form-basics > header > div.preprint-section-status.pull-right > span.text-success.',
+
+    top_level_subjects = GroupLocator(
+        By.CSS_SELECTOR, 'div[data-analytics-scope="Browse"] > ul > li'
     )
-    discipline_section = Locator(By.ID, 'preprint-form-subjects')
-    discipline_save_button = Locator(
-        By.CSS_SELECTOR, '#preprint-form-subjects .btn-primary'
+    first_subject_second_level_subjects = GroupLocator(
+        By.CSS_SELECTOR, 'div[data-analytics-scope="Browse"] > ul > li > div > ul > li'
     )
-    authors_save_button = Locator(
-        By.CSS_SELECTOR, '#preprint-form-authors .btn-primary', settings.QUICK_TIMEOUT
-    )
-    return_to_preprint_button = Locator(
-        By.CSS_SELECTOR,
-        'div.submit-section > div > button.btn.btn-default.btn-md.m-t-md.pull-right',
-    )
-    withdraw_preprint_button = Locator(
-        By.CSS_SELECTOR,
-        'div.submit-section > div > button.btn.btn-danger.btn-md.m-t-md.pull-right',
-    )
+
+    def select_top_level_subject(self, selection):
+        for subject in self.top_level_subjects:
+            if subject.text == selection:
+                # Find the checkbox element and click it to select the subject
+                checkbox = subject.find_element_by_css_selector(
+                    'input.ember-checkbox.ember-view'
+                )
+                checkbox.click()
+                break
+
+    submit_preprint_button = Locator(By.CSS_SELECTOR, '[data-test-submit-button]')
+    withdraw_preprint_button = Locator(By.CSS_SELECTOR, '[data-test-withdrawal-button]')
 
     # Group Locators
     primary_subjects = GroupLocator(
@@ -211,16 +236,14 @@ class PreprintEditPage(GuidBasePage, BasePreprintPage):
 
 class PreprintWithdrawPage(GuidBasePage, BasePreprintPage):
     url_base = urljoin(settings.OSF_HOME, '{guid}')
-    url_addition = '/withdraw'
+    url_addition = '/edit'
 
-    identity = Locator(
-        By.CSS_SELECTOR,
-        'section.preprint-form-block.preprint-form-section-withdraw-comment',
+    identity = Locator(By.CSS_SELECTOR, '[data-test-dialog-heading]')
+    reason_for_withdrawal_textarea = Locator(
+        By.CSS_SELECTOR, '[data-test-comment-input] textarea'
     )
-    reason_for_withdrawal_textarea = Locator(By.NAME, 'explanation')
     request_withdrawal_button = Locator(
-        By.CSS_SELECTOR,
-        'div.submit-section > button.btn.btn-danger.btn-md.m-t-md.pull-right',
+        By.XPATH, '//div[@class="_Footer_gyio2l"]/button[text()="Withdraw"]'
     )
 
 
@@ -267,13 +290,14 @@ class PreprintDetailPage(GuidBasePage, BasePreprintPage):
     )
 
     title = Locator(
-        By.CSS_SELECTOR, 'h1[data-test-preprint-title]', settings.LONG_TIMEOUT
+        By.CSS_SELECTOR, '[data-test-preprint-title]', settings.LONG_TIMEOUT
     )
-    view_page = Locator(By.ID, 'view-page')
+    abstract = Locator(By.CSS_SELECTOR, '[data-test-preview-wrapper]')
+    view_page = Locator(By.CSS_SELECTOR, '[data-test-supplemental-materials]')
     views_count = Locator(By.CSS_SELECTOR, '[data-test-view-count]')
     downloads_count = Locator(By.CSS_SELECTOR, '[data-test-download-count]')
     download_button = Locator(By.CSS_SELECTOR, '[data-test-download-button]')
-    edit_preprint_button = Locator(By.CSS_SELECTOR, 'div[class="edit-preprint-button"]')
+    edit_preprint_button = Locator(By.CSS_SELECTOR, '[data-test-edit-preprint-button]')
     default_citation = Locator(By.CSS_SELECTOR, '[data-test-default-citation="apa"]')
 
     # Locators for the reviews app preprint detail page
@@ -290,11 +314,8 @@ class PreprintDetailPage(GuidBasePage, BasePreprintPage):
     submit_decision_button = Locator(By.ID, 'submit-btn')
 
     # Group Locators
-    subjects = GroupLocator(
-        By.CSS_SELECTOR,
-        '[class="subject-preview"]',
-    )
-    tags = GroupLocator(By.CSS_SELECTOR, 'div.tag-section.p-t-xs > span')
+    subjects = GroupLocator(By.XPATH, '//span[@class="_subject-preview_19p7en"]')
+    tags = GroupLocator(By.XPATH, '//span[@class="_badge_1y5poa"]')
 
 
 class PendingPreprintDetailPage(PreprintDetailPage):
@@ -304,8 +325,8 @@ class PendingPreprintDetailPage(PreprintDetailPage):
         'preprintTitle',
         settings.LONG_TIMEOUT,
     )
-
     # This locator needs a data-test-selector from software devs
+    # title = Locator(By.CSS_SELECTOR, '[data-test-preprint-title]', settings.LONG_TIMEOUT)
     title = Locator(By.ID, 'preprintTitle', settings.LONG_TIMEOUT)
 
 
@@ -419,3 +440,9 @@ class PreprintPageNotFoundPage(OSFBasePage):
         By.CSS_SELECTOR,
         '[data-analytics-scope="404"] > h2',
     )
+
+
+class NewPreprintsProviderServicePage(OSFBasePage):
+    url = settings.OSF_HOME + '/preprints/select'
+    identity = Locator(By.CSS_SELECTOR, '[data-test-header]', settings.QUICK_TIMEOUT)
+    create_preprint_button = Locator(By.CSS_SELECTOR, '[data-test-create-preprints]')

@@ -16,9 +16,9 @@ from pages.landing import LandingPage
 from pages.login import LoginPage
 from pages.meetings import MeetingsPage
 from pages.preprints import (
+    NewPreprintsProviderServicePage,
     PreprintDiscoverPage,
     PreprintLandingPage,
-    PreprintSubmitPage,
     ReviewsDashboardPage,
 )
 from pages.project import (
@@ -192,7 +192,7 @@ class TestPreprintsNavbarLoggedIn(NavbarTestLoggedInMixin):
 
     def test_add_a_preprint_link(self, page, driver):
         page.navbar.add_a_preprint_link.click()
-        PreprintSubmitPage(driver, verify=True)
+        NewPreprintsProviderServicePage(driver, verify=True)
 
     def test_my_preprints_link(self, page, driver):
         page.navbar.my_preprints_link.click()
