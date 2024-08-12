@@ -88,7 +88,7 @@ class TestPreprintWorkflow:
             submit_page.abstract_input.click()
             submit_page.abstract_input.send_keys('Center for Open Selenium')
             submit_page.next_button.click()
-
+            submit_page.info_toast.here_then_gone()
             # File Upload
             submit_page.upload_from_existing_project_button.click()
             submit_page.upload_project_selector.click()
@@ -153,7 +153,6 @@ class TestPreprintWorkflow:
             assert driver.find_element(
                 By.CSS_SELECTOR, '[data-test-next-button]'
             ).get_property('disabled')
-
             # Conflict of Interest section:
             submit_page.conflict_of_interest_yes.click()
             assert submit_page.coi_text_box.present()
@@ -172,6 +171,7 @@ class TestPreprintWorkflow:
             assert submit_page.preregistration_input.present()
             submit_page.preregistration_input.click()
             submit_page.preregistration_input.send_keys_deliberately('QA Testing')
+            submit_page.scroll_into_view(submit_page.next_button.element)
             # Next button is now enabled so that we can use the object as defined in
             # pages/preprints.py
             assert submit_page.next_button.is_enabled()
@@ -184,7 +184,9 @@ class TestPreprintWorkflow:
                 'Selenium Test Project'
             )
             submit_page.supplemental_project_create_button.click()
+            submit_page.info_toast.here_then_gone()
             submit_page.next_button.click()
+            submit_page.info_toast.here_then_gone()
             submit_page.create_preprint_button.click()
             preprint_detail = PreprintDetailPage(driver, verify=True)
             WebDriverWait(driver, 10).until(EC.visibility_of(preprint_detail.title))

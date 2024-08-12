@@ -158,6 +158,7 @@ class PreprintSubmitPage(BasePreprintPage):
     )
 
     # Supplements Page
+    info_toast = Locator(By.ID, 'toast-container')
     supplemental_create_new_project = Locator(
         By.CSS_SELECTOR,
         'button[data-analytics-name="Create a new OSF preprint"]',
