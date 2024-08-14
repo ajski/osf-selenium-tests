@@ -137,6 +137,7 @@ class TestPreprintWorkflow:
             submit_page.scroll_into_view(submit_page.basics_tags_section.element)
             submit_page.basics_tags_input.click()
             submit_page.basics_tags_input.send_keys('selenium\r')
+            submit_page.scroll_into_view(submit_page.next_button.element)
             submit_page.next_button.click()
 
             # Author Assertions section
@@ -323,6 +324,7 @@ class TestPreprintWorkflow:
         assert tag_found
 
     @markers.dont_run_on_prod
+    @pytest.mark.xfail(reason='https://openscience.atlassian.net/browse/ENG-6065')
     def test_withdraw_preprint(self, session, driver, preprint_detail_page):
         """Test the Withdraw Preprint functionality. Using the preprint_detail_page
         fixture we start on the Preprint Detail page for an api created preprint. Then
