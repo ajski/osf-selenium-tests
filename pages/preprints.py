@@ -147,11 +147,15 @@ class PreprintSubmitPage(BasePreprintPage):
         settings.QUICK_TIMEOUT,
     )
     public_data_input = Locator(By.CSS_SELECTOR, '[data-test-link-input] input')
+    add_another_public_data = Locator(By.CSS_SELECTOR, '[data-test-add-another-link]')
     preregistration_no_button = Locator(
         By.CSS_SELECTOR, 'input[name="hasPreregLinks"][type="radio"][value="no"]'
     )
     preregistration_input = Locator(
         By.CSS_SELECTOR, '[data-test-public-preregistration-description-input] textarea'
+    )
+    prereg_validation_message = Locator(
+        By.CSS_SELECTOR, '[data-test-validation-errors="whyNoPrereg"]'
     )
     save_author_assertions = Locator(
         By.CSS_SELECTOR, '[data-test-author-assertions-continue]'

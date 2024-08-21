@@ -94,6 +94,7 @@ class TestPreprintWorkflow:
             submit_page.upload_project_selector.click()
             submit_page.upload_project_help_text.here_then_gone()
             submit_page.upload_project_selector_project.click()
+            submit_page.scroll_into_view(submit_page.upload_select_file.element)
             submit_page.upload_select_file.click()
             submit_page.next_button.click()
 
@@ -126,6 +127,8 @@ class TestPreprintWorkflow:
                     )
                 )
             )
+
+            submit_page.scroll_into_view(submit_page.basics_tags_section.element)
             submit_page.select_top_level_subject('Engineering')
             WebDriverWait(driver, 5).until(
                 EC.visibility_of(submit_page.first_selected_subject)
@@ -154,14 +157,17 @@ class TestPreprintWorkflow:
             assert driver.find_element(
                 By.CSS_SELECTOR, '[data-test-next-button]'
             ).get_property('disabled')
+
             # Conflict of Interest section:
             submit_page.conflict_of_interest_yes.click()
             assert submit_page.coi_text_box.present()
             submit_page.coi_text_box.click()
             submit_page.coi_text_box.send_keys_deliberately('QA Testing')
             assert submit_page.public_data_input.absent()
+            submit_page.scroll_into_view(submit_page.public_available_button.element)
             submit_page.public_available_button.click()
             assert submit_page.public_data_input.present()
+            submit_page.scroll_into_view(submit_page.add_another_public_data.element)
             submit_page.public_data_input.click()
             submit_page.public_data_input.send_keys_deliberately('https://osf.io/')
             # Need to scroll down since the Preregistration radio buttons are obscured
@@ -170,6 +176,7 @@ class TestPreprintWorkflow:
             assert submit_page.preregistration_input.absent()
             submit_page.preregistration_no_button.click()
             assert submit_page.preregistration_input.present()
+            submit_page.scroll_into_view(submit_page.prereg_validation_message.element)
             submit_page.preregistration_input.click()
             submit_page.preregistration_input.send_keys_deliberately('QA Testing')
             submit_page.scroll_into_view(submit_page.next_button.element)
