@@ -159,6 +159,7 @@ class TestPreprintWorkflow:
             ).get_property('disabled')
 
             # Conflict of Interest section:
+            submit_page.info_toast.here_then_gone()
             submit_page.conflict_of_interest_yes.click()
             assert submit_page.coi_text_box.present()
             submit_page.coi_text_box.click()
@@ -266,12 +267,12 @@ class TestPreprintWorkflow:
         preprint_detail_page.edit_preprint_button.click()
         edit_page = PreprintEditPage(driver)
         # Click the Title and Abstract
-        edit_page.preprint_title_edit_input.click()
-        edit_page.preprint_title_edit_input.clear()
-        edit_page.preprint_title_edit_input.send_keys('Selenium Preprint Edit')
-        edit_page.abstract_edit_input.click()
-        edit_page.abstract_edit_input.clear()
-        edit_page.abstract_edit_input.send_keys('Testing Selenium Abstract edit')
+        edit_page.preprint_title_input.click()
+        edit_page.preprint_title_input.clear()
+        edit_page.preprint_title_input.send_keys('Selenium Preprint Edit')
+        edit_page.abstract_input.click()
+        edit_page.abstract_input.clear()
+        edit_page.abstract_input.send_keys('Testing Selenium Abstract edit')
         edit_page.next_button.click()
         WebDriverWait(driver, 5).until(
             EC.visibility_of_element_located((By.CSS_SELECTOR, '[data-test-title]'))
@@ -287,10 +288,10 @@ class TestPreprintWorkflow:
                 )
             )
         )
+        edit_page.scroll_into_view(edit_page.basics_tags_input.element)
         edit_page.select_top_level_subject('Business')
 
         # Add another Tag and click the Save and continue button
-        edit_page.scroll_into_view(edit_page.basics_tags_section.element)
         edit_page.basics_tags_input.send_keys(os.environ['PYTEST_CURRENT_TEST'])
         edit_page.basics_tags_input.send_keys(Keys.RETURN)
         # Click Return to preprint button to go back to Preprint Detail page

@@ -183,41 +183,13 @@ class PreprintSubmitPage(BasePreprintPage):
     )
 
 
-class PreprintEditPage(GuidBasePage, BasePreprintPage):
+class PreprintEditPage(PreprintSubmitPage):
     url_base = urljoin(settings.OSF_HOME, '{guid}')
     url_addition = '/edit'
     identity = Locator(
         By.CSS_SELECTOR,
         '[div#ember539.ember-view._header-container_1w5828.with-custom-branding]',
     )
-    preprint_title_edit_input = Locator(
-        By.CSS_SELECTOR, '[data-test-title-input] input'
-    )
-    abstract_edit_input = Locator(
-        By.CSS_SELECTOR, '[data-test-abstract-input] textarea'
-    )
-    next_button = Locator(By.CSS_SELECTOR, '[data-test-next-button]')
-    basics_tags_section = Locator(By.CSS_SELECTOR, '[data-test-tags-widget-tag-input]')
-    basics_tags_input = Locator(
-        By.CSS_SELECTOR, 'input[aria-label="Add a tag to enhance discoverability"]'
-    )
-
-    top_level_subjects = GroupLocator(
-        By.CSS_SELECTOR, 'div[data-analytics-scope="Browse"] > ul > li'
-    )
-    first_subject_second_level_subjects = GroupLocator(
-        By.CSS_SELECTOR, 'div[data-analytics-scope="Browse"] > ul > li > div > ul > li'
-    )
-
-    def select_top_level_subject(self, selection):
-        for subject in self.top_level_subjects:
-            if subject.text == selection:
-                # Find the checkbox element and click it to select the subject
-                checkbox = subject.find_element_by_css_selector(
-                    'input.ember-checkbox.ember-view'
-                )
-                checkbox.click()
-                break
 
     submit_preprint_button = Locator(By.CSS_SELECTOR, '[data-test-submit-button]')
     withdraw_preprint_button = Locator(By.CSS_SELECTOR, '[data-test-withdrawal-button]')
