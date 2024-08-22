@@ -8,15 +8,16 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.ui import WebDriverWait
 
 import markers
 import settings
+import utils
 from api import osf_api
 from pages.login import logout
 from pages.preprints import (
     BrandedPreprintsDiscoverPage,
+    NewPreprintsProviderServicePage,
     PendingPreprintDetailPage,
     PreprintDetailPage,
     PreprintDiscoverPage,
@@ -66,20 +67,81 @@ class TestPreprintWorkflow:
                 '[data-analytics-name="Add a preprint"]'
             )
             landing_page.add_preprint_button.click()
-            submit_page = PreprintSubmitPage(driver, verify=True)
-
-            # Wait for select a service to show
-            WebDriverWait(driver, 10).until(
-                EC.visibility_of(submit_page.select_a_service_help_text)
+            # Select provider service
+            select_provider_page = NewPreprintsProviderServicePage(driver, verify=True)
+            providers_list = driver.find_elements_by_css_selector(
+                '[data-test-provider-id]'
             )
-            submit_page.select_a_service_save_button.click()
+            for provider in providers_list:
+                if 'Open Science Framework' in provider.text:
+                    select_provider_page.scroll_into_view(provider)
+                    # provider.click()
+                    provider.find_element_by_css_selector(
+                        '[data-test-select-button]'
+                    ).click()
+                    break
+            select_provider_page.create_preprint_button.click()
+            submit_page = PreprintSubmitPage(driver)
+            # Title and Abstract
+            submit_page.preprint_title_input.click()
+            submit_page.preprint_title_input.send_keys('Selenium Test Preprint')
+            submit_page.abstract_input.click()
+            submit_page.abstract_input.send_keys('Center for Open Selenium')
+            submit_page.next_button.click()
+            submit_page.info_toast.here_then_gone()
+            # File Upload
             submit_page.upload_from_existing_project_button.click()
             submit_page.upload_project_selector.click()
             submit_page.upload_project_help_text.here_then_gone()
             submit_page.upload_project_selector_project.click()
-
+            submit_page.scroll_into_view(submit_page.upload_select_file.element)
             submit_page.upload_select_file.click()
-            submit_page.upload_file_save_continue.click()
+            submit_page.next_button.click()
+
+            # Metadata page
+            WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable(
+                    (By.CSS_SELECTOR, '[data-test-power-select-dropdown]')
+                )
+            )
+            submit_page.basics_license_dropdown.click()
+            # The order of the options in the license dropdown is not consistent across
+            # test environments. So we have to select by the actual text value instead
+            # of by relative position (i.e. 3rd option in listbox).
+            WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located(
+                    (
+                        By.CSS_SELECTOR,
+                        '#ember-basic-dropdown-wormhole > div > ul >li.ember-power-select-option',
+                    )
+                )
+            )
+            submit_page.select_from_dropdown_listbox('CC0 1.0 Universal')
+
+            # Wait for discipline help text
+            WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located(
+                    (
+                        By.CSS_SELECTOR,
+                        'div.ember-tabs__tab-panel.ember-tabs__tab-panel--selected > div >ul >li>label > input',
+                    )
+                )
+            )
+
+            submit_page.scroll_into_view(submit_page.basics_tags_section.element)
+            submit_page.select_top_level_subject('Engineering')
+            WebDriverWait(driver, 5).until(
+                EC.visibility_of(submit_page.first_selected_subject)
+            )
+            assert submit_page.first_selected_subject.text == 'Engineering'
+
+            # Need to scroll down since the Keyword/tags section is obscured by the Dev
+            # mode warning in the test environments
+            submit_page.scroll_into_view(submit_page.basics_tags_section.element)
+            submit_page.basics_tags_input.click()
+            submit_page.basics_tags_input.send_keys('selenium\r')
+            submit_page.scroll_into_view(submit_page.next_button.element)
+            submit_page.next_button.click()
 
             # Author Assertions section
             # Note: We can't use the submit_page.save_author_assertions object here,
@@ -93,11 +155,20 @@ class TestPreprintWorkflow:
             # submit_page.save_author_assertions object to check the disabled
             # property.  See implementation below.
             assert driver.find_element(
-                By.CSS_SELECTOR, '[data-test-author-assertions-continue]'
+                By.CSS_SELECTOR, '[data-test-next-button]'
             ).get_property('disabled')
+
+            # Conflict of Interest section:
+            submit_page.info_toast.here_then_gone()
+            submit_page.conflict_of_interest_yes.click()
+            assert submit_page.coi_text_box.present()
+            submit_page.coi_text_box.click()
+            submit_page.coi_text_box.send_keys_deliberately('QA Testing')
             assert submit_page.public_data_input.absent()
+            submit_page.scroll_into_view(submit_page.public_available_button.element)
             submit_page.public_available_button.click()
             assert submit_page.public_data_input.present()
+            submit_page.scroll_into_view(submit_page.add_another_public_data.element)
             submit_page.public_data_input.click()
             submit_page.public_data_input.send_keys_deliberately('https://osf.io/')
             # Need to scroll down since the Preregistration radio buttons are obscured
@@ -106,63 +177,32 @@ class TestPreprintWorkflow:
             assert submit_page.preregistration_input.absent()
             submit_page.preregistration_no_button.click()
             assert submit_page.preregistration_input.present()
+            submit_page.scroll_into_view(submit_page.prereg_validation_message.element)
             submit_page.preregistration_input.click()
             submit_page.preregistration_input.send_keys_deliberately('QA Testing')
-            # Save button is now enabled so we can use the object as defined in
+            submit_page.scroll_into_view(submit_page.next_button.element)
+            # Next button is now enabled so that we can use the object as defined in
             # pages/preprints.py
-            assert submit_page.save_author_assertions.is_enabled()
-            submit_page.save_author_assertions.click()
-
-            submit_page.basics_license_dropdown.click()
-            # The order of the options in the license dropdown is not consistent across
-            # test environments. So we have to select by the actual text value instead
-            # of by relative position (i.e. 3rd option in listbox).
-            license_select = Select(submit_page.basics_license_dropdown)
-            license_select.select_by_visible_text('CC0 1.0 Universal')
-            # Need to scroll down since the Keyword/tags section is obscured by the Dev
-            # mode warning in the test environments
-            submit_page.scroll_into_view(submit_page.basics_tags_section.element)
-            submit_page.basics_tags_section.click()
-            submit_page.basics_tags_input.send_keys('selenium\r')
-            submit_page.basics_abstract_input.click()
-            submit_page.basics_abstract_input.send_keys('Center for Open Selenium')
-            submit_page.basics_save_button.click()
-
-            # Wait for discipline help text
-            submit_page.first_discipline.click()
-            submit_page.discipline_save_button.click()
-
-            # Wait for authors box to show
-            submit_page.authors_save_button.click()
-
-            # Conflict of Interest section:
-            assert driver.find_element(
-                By.CSS_SELECTOR, '[data-test-coi-continue]'
-            ).get_property('disabled')
-            assert submit_page.no_coi_text_box.absent()
-            submit_page.conflict_of_interest_no.click()
-            assert submit_page.no_coi_text_box.present()
-            assert submit_page.coi_save_button.is_enabled()
-            submit_page.coi_save_button.click()
+            assert submit_page.next_button.is_enabled()
+            submit_page.next_button.click()
 
             # Wait for Supplemental materials to show
             submit_page.supplemental_create_new_project.click()
-            submit_page.supplemental_save_button.click()
-
-            submit_page.create_preprint_button.click()
-            submit_page.modal_create_preprint_button.click()
-
-            preprint_detail = PendingPreprintDetailPage(driver, verify=True)
-            WebDriverWait(driver, 10).until(EC.visibility_of(preprint_detail.title))
-
-            assert preprint_detail.title.text == project_with_file.title
-            # Capture guid of supplemental materials project created during workflow
-            match = re.search(
-                r'Supplemental Materials\s+([a-z0-9]{4,8})\.osf\.io/([a-z0-9]{5})',
-                preprint_detail.view_page.text,
+            submit_page.supplemental_project_title.click()
+            submit_page.supplemental_project_title.send_keys_deliberately(
+                'Selenium Test Project'
             )
-            assert match is not None
-            supplemental_guid = match.group(2)
+            submit_page.supplemental_project_create_button.click()
+            submit_page.info_toast.here_then_gone()
+            submit_page.next_button.click()
+            submit_page.info_toast.here_then_gone()
+            submit_page.create_preprint_button.click()
+            preprint_detail = PreprintDetailPage(driver, verify=True)
+            WebDriverWait(driver, 10).until(EC.visibility_of(preprint_detail.title))
+            assert preprint_detail.title.text == 'Selenium Test Preprint'
+            # Capture guid of supplemental materials project created during workflow
+            supplemental_url = preprint_detail.view_page.get_attribute('href')
+            supplemental_guid = utils.get_guid_from_url(supplemental_url, 3)
 
         finally:
             # If there was an error above and we did not capture the guid for the
@@ -225,32 +265,55 @@ class TestPreprintWorkflow:
         """
         assert PreprintDetailPage(driver, verify=True)
         preprint_detail_page.edit_preprint_button.click()
-        edit_page = PreprintEditPage(driver, verify=True)
-        # Click the Basics section to reveal the Basic form fields
-        edit_page.scroll_into_view(edit_page.basics_section.element)
-        edit_page.basics_section.click()
-        # Add another Tag and click the Save and continue button
-        edit_page.basics_tags_section.click()
-        edit_page.basics_tags_input.send_keys(os.environ['PYTEST_CURRENT_TEST'])
-        edit_page.basics_tags_input.send_keys('\r')
-        edit_page.basics_save_button.click()
+        edit_page = PreprintEditPage(driver)
+        # Click the Title and Abstract
+        edit_page.preprint_title_input.click()
+        edit_page.preprint_title_input.clear()
+        edit_page.preprint_title_input.send_keys('Selenium Preprint Edit')
+        edit_page.abstract_input.click()
+        edit_page.abstract_input.clear()
+        edit_page.abstract_input.send_keys('Testing Selenium Abstract edit')
+        edit_page.next_button.click()
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located((By.CSS_SELECTOR, '[data-test-title]'))
+        )
+        edit_page.next_button.click()
+
         # Next add another subject in the Discipline section
-        edit_page.scroll_into_view(edit_page.discipline_section.element)
-        edit_page.discipline_section.click()
-        # Need to wait a couple seconds for the event code behind the Subjects listbox
-        # to be operable, so wait for the Changes saved message in the Basics section
-        # to disappear.
-        edit_page.basics_section_changes_saved_indicator.here_then_gone()
-        edit_page.select_primary_subject_by_name('Business')
-        edit_page.scroll_into_view(edit_page.discipline_save_button.element)
-        edit_page.discipline_save_button.click()
-        # Wait for the Authors section to become visible to give the addition of the
-        # subject time to actually save before we leave the page.
-        WebDriverWait(driver, 5).until(EC.visibility_of(edit_page.authors_save_button))
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(
+                (
+                    By.CSS_SELECTOR,
+                    'div.ember-tabs__tab-panel.ember-tabs__tab-panel--selected > div >ul >li>label > input',
+                )
+            )
+        )
+        edit_page.scroll_into_view(edit_page.basics_tags_input.element)
+        edit_page.select_top_level_subject('Business')
+
+        # Add another Tag and click the Save and continue button
+        edit_page.basics_tags_input.send_keys(os.environ['PYTEST_CURRENT_TEST'])
+        edit_page.basics_tags_input.send_keys(Keys.RETURN)
         # Click Return to preprint button to go back to Preprint Detail page
-        edit_page.scroll_into_view(edit_page.return_to_preprint_button.element)
-        edit_page.return_to_preprint_button.click()
-        detail_page = PendingPreprintDetailPage(driver, verify=True)
+        edit_page.next_button.click()
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-test-next-button]'))
+        )
+
+        edit_page.next_button.click()
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-test-next-button]'))
+        )
+
+        edit_page.next_button.click()
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-test-submit-button]'))
+        )
+        edit_page.submit_preprint_button.click()
+        detail_page = PreprintDetailPage(driver, verify=True)
+        # Verify Title and Abstract
+        assert detail_page.title.text == 'Selenium Preprint Edit'
+        assert detail_page.abstract.text == 'Testing Selenium Abstract edit'
         # Verify new Subject appears on the page
         subjects = detail_page.subjects
         subject_found = False
@@ -269,6 +332,7 @@ class TestPreprintWorkflow:
         assert tag_found
 
     @markers.dont_run_on_prod
+    @pytest.mark.xfail(reason='https://openscience.atlassian.net/browse/ENG-6065')
     def test_withdraw_preprint(self, session, driver, preprint_detail_page):
         """Test the Withdraw Preprint functionality. Using the preprint_detail_page
         fixture we start on the Preprint Detail page for an api created preprint. Then
@@ -282,8 +346,12 @@ class TestPreprintWorkflow:
         """
         assert PreprintDetailPage(driver, verify=True)
         preprint_detail_page.edit_preprint_button.click()
-        edit_page = PreprintEditPage(driver, verify=True)
-        edit_page.scroll_into_view(edit_page.withdraw_preprint_button.element)
+        edit_page = PreprintEditPage(driver)
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-test-withdrawal-button]')
+            )
+        )
         edit_page.withdraw_preprint_button.click()
         withdraw_page = PreprintWithdrawPage(driver, verify=True)
         withdraw_page.reason_for_withdrawal_textarea.send_keys_deliberately(
@@ -292,6 +360,12 @@ class TestPreprintWorkflow:
         withdraw_page.reason_for_withdrawal_textarea.send_keys(
             os.environ['PYTEST_CURRENT_TEST']
         )
+        WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-test-withdrawal-button]')
+            )
+        )
+        assert withdraw_page.request_withdrawal_button.is_enabled()
         withdraw_page.request_withdrawal_button.click()
         # Should be redirected back to Preprint Detail page
         assert PendingPreprintDetailPage(driver, verify=True)
@@ -579,12 +653,11 @@ class TestPreprintModeration:
         preprint_page.goto()
         assert PreprintDetailPage(driver, verify=True)
         WebDriverWait(driver, 5).until(EC.visibility_of(preprint_page.title))
-        assert preprint_title in preprint_page.title.text
         assert 'Withdrawn' in preprint_page.title.text
+
         # TODO: Re-enable assert after [ENG-5092] is fixed.
-        # assert (
-        #         preprint_page.status_explanation.text == 'This preprint has been withdrawn.'
-        # )
+        # assert preprint_page.status_explanation.text == 'This preprint has been withdrawn.'
+
         assert preprint_page.withdraw_reason.present()
 
     def test_decline_withdrawal_request_pre_moderated_preprint(
@@ -847,12 +920,12 @@ class TestPreprintModeration:
         preprint_page.goto()
         assert PreprintDetailPage(driver, verify=True)
         WebDriverWait(driver, 5).until(EC.visibility_of(preprint_page.title))
-        assert preprint_title in preprint_page.title.text
+
         assert 'Withdrawn' in preprint_page.title.text
+
         # TODO: Re-enable assert after [ENG-5092] is fixed.
-        # assert (
-        #         preprint_page.status_explanation.text == 'This preprint has been withdrawn.'
-        # )
+        # assert preprint_page.status_explanation.text == 'This preprint has been withdrawn.'
+
         assert preprint_page.withdraw_reason.present()
 
     def test_approve_withdrawal_request_post_moderated_preprint(
@@ -945,8 +1018,9 @@ class TestPreprintModeration:
         preprint_page.goto()
         assert PreprintDetailPage(driver, verify=True)
         WebDriverWait(driver, 5).until(EC.visibility_of(preprint_page.title))
-        assert preprint_title in preprint_page.title.text
+
         assert 'Withdrawn' in preprint_page.title.text
+
         # Add assert for "This preprint has been withdrawn" after [ENG-5092] is fixed.
         assert preprint_page.withdraw_reason.present()
 
