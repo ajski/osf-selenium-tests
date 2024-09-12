@@ -172,8 +172,8 @@ jobs:
           TEST_BUILD: ${{ matrix.browser }}
           DOMAIN: ${{ needs.set_variables.outputs.domain }}
         run: |
-          invoke test_all_selenium_part_one
           invoke test_all_selenium_part_two
+          invoke test_all_selenium_part_one
       - if: ${{ github.event.inputs.service == 'Preprints' }}
         name: run preprints regression tests in ${{ env.DOMAIN }}
         env:
