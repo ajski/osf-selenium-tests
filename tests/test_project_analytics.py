@@ -3,6 +3,7 @@ from datetime import (
     timezone,
 )
 
+import ipdb
 import pytest
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
@@ -41,33 +42,42 @@ def parse_node_analytics_data(raw_data, request, **kwargs):
     """
     if request == 'page_view_count':
         # Popular Page Visits count data contains the top 10 most popular pages
+        # these are sorted by highest count to the lowest count
         page = kwargs.get('page')
+
         popular_pages = raw_data['attributes']['popular_pages']
         # Initialize the page count value to 0 and only override it if there is a
         # value found in the data.
         page_count = 0
-        for page_data in popular_pages:
-            if page == 'home' or page == 'node':
-                node_id = kwargs.get('node_id')
+
+        if page == 'home' or page == 'node':
+            node_id = kwargs.get('node_id')
+            for page_data in popular_pages:
                 if page_data['path'] == '/{}'.format(node_id):
-                    page_count = page_data['count']
-                    break
-            elif page == 'files':
-                # For Files page count, visits to the various storage provider addons
-                # are aggregated in the graph.
-                if 'files' in page_data['path']:
-                    page_count = page_count + page_data['count']
-            elif page == 'wiki':
-                # For Wiki page count, visits to any individual wiki pages are
-                # aggregated in the graph.
-                if 'wiki' in page_data['path']:
-                    page_count = page_count + page_data['count']
-            elif page in page_data['path']:
-                page_count = page_data['count']
-                break
-        return page_count
+                    page_count += page_data['count']
+            return page_count
+        elif page == 'osf':
+            for page_data in popular_pages:
+                if page_data['title'] == "OSF":
+                    page_count += page_data['count']
+            return page_count
+        elif page == 'files':
+            # For Files page count, visits to the various storage provider addons
+            # are aggregated in the graph.
+            if 'files' in popular_pages['path']:
+                page_count = page_count + popular_pages['count']
+                return page_count
+        elif page == 'wiki':
+            # For Wiki page count, visits to any individual wiki pages are
+            # aggregated in the graph.
+            if 'wiki' in popular_pages[0]['path']:
+                page_count = page_count + popular_pages['count']
+                return page_count
+        else:
+            return popular_pages[0]['count']
     elif request == 'unique_visits_count':
         # Unique Visits Count is a list by Date in format: YYYY-MM-DD (in UTC timezone)
+        # these are sorted by oldest view count to the newest view count
         date = kwargs.get('date')
         unique_visits = raw_data['attributes']['unique_visits']
         # Initialize the visit count value to 0 and only override it if there is a
@@ -80,6 +90,7 @@ def parse_node_analytics_data(raw_data, request, **kwargs):
         return visit_count
     elif request == 'time_of_day_count':
         # Time of Day Count is a list of visits per hour (in UTC timezone)
+        # these are sorted by highest count to the lowest count
         hour = kwargs.get('hour')
         time_of_day = raw_data['attributes']['time_of_day']
         # Initialize the tod count value to 0 and only override it if there is a value
