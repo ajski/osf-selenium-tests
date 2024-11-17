@@ -3,8 +3,8 @@ from datetime import (
     timezone,
 )
 
-import ipdb
 import pytest
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -17,6 +17,19 @@ from pages.project import (
     FilesPage,
     ProjectPage,
 )
+
+
+def get_tooltip_value(driver, analytics_page):
+    """Hover over the top bar on the Popular Pages graph and fetch the tooltip value."""
+    action_chains = ActionChains(driver)
+    action_chains.move_to_element(
+        analytics_page.most_visited_page_bar.element
+    ).perform()
+    tooltip = WebDriverWait(driver, 3).until(
+        EC.visibility_of(analytics_page.popular_pages_tooltip_value)
+    )
+
+    return int(tooltip.text)
 
 
 @markers.smoke_test
@@ -282,20 +295,16 @@ class TestNodeAnalytics:
             visit_data, 'page_view_count', page=parse_page, node_id=parse_node
         )
 
-        # Hover the mouse over the top bar on the Popular Pages graph which represents
-        # the most popular page and get the value that is displayed in the tool tip.
-        action_chains = ActionChains(driver)
-        action_chains.move_to_element(
-            analytics_page.most_visited_page_bar.element
-        ).perform()
-        WebDriverWait(driver, 3).until(
-            EC.visibility_of(analytics_page.popular_pages_tooltip_value)
-        )
-        visit_display = int(analytics_page.popular_pages_tooltip_value.text)
+        try:
+            # Hover over tooltip to see most visited page value
+            tooltip_value = get_tooltip_value(driver, analytics_page)
 
-        if page_label == 'Analytics':
             # If the most visited page is the Analytics page then increment the display
             # count by 1 in order to count the current visit
-            visit_display = visit_display + 1
+            if page_label == 'Analytics':
+                tooltip_value += 1
 
-        assert abs(visit_display - visit_count) <= 1
+            assert abs(tooltip_value - visit_count) <= 1
+        except NoSuchElementException:
+            # Only pass test if the page actually has no views
+            assert visit_count == 0
