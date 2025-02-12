@@ -4,6 +4,7 @@ from datetime import (
 )
 
 import pytest
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -16,6 +17,19 @@ from pages.project import (
     FilesPage,
     ProjectPage,
 )
+
+
+def get_tooltip_value(driver, analytics_page):
+    """Hover over the top bar on the Popular Pages graph and fetch the tooltip value."""
+    action_chains = ActionChains(driver)
+    action_chains.move_to_element(
+        analytics_page.most_visited_page_bar.element
+    ).perform()
+    tooltip = WebDriverWait(driver, 3).until(
+        EC.visibility_of(analytics_page.popular_pages_tooltip_value)
+    )
+
+    return int(tooltip.text)
 
 
 @markers.smoke_test
@@ -41,33 +55,42 @@ def parse_node_analytics_data(raw_data, request, **kwargs):
     """
     if request == 'page_view_count':
         # Popular Page Visits count data contains the top 10 most popular pages
+        # these are sorted by highest count to the lowest count
         page = kwargs.get('page')
+
         popular_pages = raw_data['attributes']['popular_pages']
         # Initialize the page count value to 0 and only override it if there is a
         # value found in the data.
         page_count = 0
-        for page_data in popular_pages:
-            if page == 'home' or page == 'node':
-                node_id = kwargs.get('node_id')
+
+        if page == 'home' or page == 'node':
+            node_id = kwargs.get('node_id')
+            for page_data in popular_pages:
                 if page_data['path'] == '/{}'.format(node_id):
-                    page_count = page_data['count']
-                    break
-            elif page == 'files':
-                # For Files page count, visits to the various storage provider addons
-                # are aggregated in the graph.
-                if 'files' in page_data['path']:
-                    page_count = page_count + page_data['count']
-            elif page == 'wiki':
-                # For Wiki page count, visits to any individual wiki pages are
-                # aggregated in the graph.
-                if 'wiki' in page_data['path']:
-                    page_count = page_count + page_data['count']
-            elif page in page_data['path']:
-                page_count = page_data['count']
-                break
-        return page_count
+                    page_count += page_data['count']
+            return page_count
+        elif page == 'osf':
+            for page_data in popular_pages:
+                if page_data['title'] == "OSF":
+                    page_count += page_data['count']
+            return page_count
+        elif page == 'files':
+            # For Files page count, visits to the various storage provider addons
+            # are aggregated in the graph.
+            if 'files' in popular_pages['path']:
+                page_count = page_count + popular_pages['count']
+                return page_count
+        elif page == 'wiki':
+            # For Wiki page count, visits to any individual wiki pages are
+            # aggregated in the graph.
+            if 'wiki' in popular_pages[0]['path']:
+                page_count = page_count + popular_pages['count']
+                return page_count
+        else:
+            return popular_pages[0]['count']
     elif request == 'unique_visits_count':
         # Unique Visits Count is a list by Date in format: YYYY-MM-DD (in UTC timezone)
+        # these are sorted by oldest view count to the newest view count
         date = kwargs.get('date')
         unique_visits = raw_data['attributes']['unique_visits']
         # Initialize the visit count value to 0 and only override it if there is a
@@ -80,6 +103,7 @@ def parse_node_analytics_data(raw_data, request, **kwargs):
         return visit_count
     elif request == 'time_of_day_count':
         # Time of Day Count is a list of visits per hour (in UTC timezone)
+        # these are sorted by highest count to the lowest count
         hour = kwargs.get('hour')
         time_of_day = raw_data['attributes']['time_of_day']
         # Initialize the tod count value to 0 and only override it if there is a value
@@ -271,20 +295,16 @@ class TestNodeAnalytics:
             visit_data, 'page_view_count', page=parse_page, node_id=parse_node
         )
 
-        # Hover the mouse over the top bar on the Popular Pages graph which represents
-        # the most popular page and get the value that is displayed in the tool tip.
-        action_chains = ActionChains(driver)
-        action_chains.move_to_element(
-            analytics_page.most_visited_page_bar.element
-        ).perform()
-        WebDriverWait(driver, 3).until(
-            EC.visibility_of(analytics_page.popular_pages_tooltip_value)
-        )
-        visit_display = int(analytics_page.popular_pages_tooltip_value.text)
+        try:
+            # Hover over tooltip to see most visited page value
+            tooltip_value = get_tooltip_value(driver, analytics_page)
 
-        if page_label == 'Analytics':
             # If the most visited page is the Analytics page then increment the display
             # count by 1 in order to count the current visit
-            visit_display = visit_display + 1
+            if page_label == 'Analytics':
+                tooltip_value += 1
 
-        assert abs(visit_display - visit_count) <= 1
+            assert abs(tooltip_value - visit_count) <= 1
+        except NoSuchElementException:
+            # Only pass test if the page actually has no views
+            assert visit_count == 0
