@@ -74,6 +74,9 @@ class NavbarTestLoggedOutMixin:
     def test_donate_link(self, page, driver):
         page.navbar.donate_link.click()
         donate_page = COSDonatePage(driver, verify=False)
+        WebDriverWait(driver, 10).until(
+            EC.url_matches(('https://www.cos.io/support-cos'))
+        )
         assert_donate_page(driver, donate_page)
 
     def test_sign_in_button(self, page, driver):
@@ -323,7 +326,7 @@ def assert_donate_page(driver, donate_page):
     meta_tag = driver.find_element_by_xpath(
         '//meta[@property="og:title" and contains(@content, "Support COS")]'
     )
-
+    WebDriverWait(driver, 10).until(EC.url_matches(('https://www.cos.io/support-cos')))
     assert 'support-cos' in driver.current_url
     assert meta_tag.get_attribute('property') == 'og:title'
     assert meta_tag.get_attribute('content') == 'Support COS'
