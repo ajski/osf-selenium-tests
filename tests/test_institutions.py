@@ -1,9 +1,4 @@
-import ipdb
 import pytest
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
-
 import markers
 from api import osf_api
 from pages.institutions import (
@@ -49,7 +44,7 @@ class TestInstitutionAdminDashboardPage:
         # Select 'QA' from Departments listbox and verify that the correct number
         # of users are displayed in the table
         dashboard_page.click_on_listbox_trigger('Total Users by Department')
-        user_table_rows = dashboard_page.select_department_from_listbox('QA')
+        user_table_rows = dashboard_page.get_expanded_total_by_expanded_name('QA')
         api_qa_users = osf_api.get_institution_users_per_department(
             session, institution_id='cos', department='QA'
         )
@@ -63,20 +58,20 @@ class TestInstitutionAdminDashboardPage:
         api_public_project_count = metrics_data['attributes']['public_project_count']
         api_private_project_count = metrics_data['attributes']['private_project_count']
 
-        total_project_count = dashboard_page.get_total_count_by_kpi_title('OSF Public and Private Projects')
+        total_project_count = dashboard_page.get_kpi_data_by_kpi_title('OSF Public and Private Projects')
 
         # Verify Total User Count
-        displayed_user_count = dashboard_page.get_total_count_by_kpi_title('Total Users')
+        displayed_user_count = dashboard_page.get_kpi_data_by_kpi_title('Total Users')
         assert int(displayed_user_count) == api_user_count
 
         dashboard_page.click_on_listbox_trigger('Public vs Private Projects')
 
         # Verify Public Project Count
-        displayed_public_project_count = dashboard_page.select_department_from_listbox('Public Projects')
+        displayed_public_project_count = dashboard_page.get_expanded_total_by_expanded_name('Public Projects')
         assert int(displayed_public_project_count) == api_public_project_count
 
         # Verify Private Project Count
-        displayed_private_project_count = dashboard_page.select_department_from_listbox('Private Projects')
+        displayed_private_project_count = dashboard_page.get_expanded_total_by_expanded_name('Private Projects')
         assert int(displayed_private_project_count) == api_private_project_count
 
         # Verify Total Project Count

@@ -1,6 +1,4 @@
-import ipdb
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 import settings
@@ -61,13 +59,15 @@ class InstitutionAdminDashboardPage(BaseInstitutionPage):
 
     url_addition = '/dashboard'
 
-    identity = Locator(By.CSS_SELECTOR, '._institution-banner_kv000k')
-    loading_indicator = Locator(By.CSS_SELECTOR, '.ball-scale ball-dark _LoadingIndicator_k6n1c2', settings.LONG_TIMEOUT)
+    identity = Locator(By.CSS_SELECTOR, 'img[alt="Center For Open Science [Test]"]')
+    loading_indicator = Locator(
+        By.CSS_SELECTOR, '.ball-scale', settings.LONG_TIMEOUT
+    )
     title_containers = GroupLocator(
         By.CSS_SELECTOR,
         '._title-container_1d9vmx',
     )
-    total_project_count = GroupLocator(
+    kpi_container = GroupLocator(
         By.CSS_SELECTOR,
         '._kpi-container_1ge2xx',
     )
@@ -84,26 +84,25 @@ class InstitutionAdminDashboardPage(BaseInstitutionPage):
         By.CSS_SELECTOR,
         'div._table-wrapper_1w5vdt > div > div.ember-view > div > div > table > tbody > tr',
     )
-
-    def select_department_from_listbox(self, department):
+    def get_expanded_total_by_expanded_name(self, department):
         for element in  self.department_options:
-            name_elem = element.find_element(By.CSS_SELECTOR, "div._name_1d9vmx")
+            name_elem = element.find_element(By.CSS_SELECTOR, "[data-test-expanded-name]")
             if name_elem.text.strip() ==  department:
-                total_elem = element.find_element(By.CSS_SELECTOR, "div._total_1d9vmx")
+                total_elem = element.find_element(By.CSS_SELECTOR, "[data-test-expanded-total]")
                 return int(total_elem.text.strip())
 
-    def get_total_count_by_kpi_title(self, target_title):
-        for container in self.total_project_count:
-            title_element = container.find_element(By.CSS_SELECTOR, "._title_1ge2xx")
+    def get_kpi_data_by_kpi_title(self, target_title):
+        for container in self.kpi_container:
+            title_element = container.find_element(By.CSS_SELECTOR, "[data-test-kpi-title]")
             if title_element.text.strip() == target_title:
-                value_element = container.find_element(By.CSS_SELECTOR, "._total-container_1ge2xx")
+                value_element = container.find_element(By.CSS_SELECTOR, "[data-test-kpi-data]")
                 return value_element.text.strip()
 
     def click_on_listbox_trigger(self, section_title):
         for section in self.title_containers:
-            title_element = section.find_element(By.CSS_SELECTOR, "._title_1d9vmx")
+            title_element = section.find_element(By.CSS_SELECTOR, "[data-test-chart-title]")
             if title_element.text.strip() == section_title:
-                button = section.find_element(By.CSS_SELECTOR, "button._Button_6kisxq._FakeLink_6kisxq")
+                button = section.find_element(By.CSS_SELECTOR, "[data-test-expand-additional-data]")
                 icon = section.find_element(By.CSS_SELECTOR, "[data-test-toggle-icon]")
                 button.click()
                 WebDriverWait(self.driver, 10).until(
